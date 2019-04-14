@@ -4,9 +4,11 @@
  *  Created on: Apr 9, 2019
  *      Author: aobog
  */
-#include "I2C.h"
+#include "CameraMotors.h"
+
 #include <iostream>
 #include <unistd.h>
+
 /*Based on the datasheet of SG90 motor
  *1. the PWM period is 20ms (50Hz)
  *2. the range of duty cycle is 1-2ms, the range of PCA9685 is 0-4096 which maps to 0-100% duty cycle,

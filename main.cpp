@@ -14,7 +14,8 @@
 #include "bcm2835.h"
 
 #include <wiringPi.h>
-#include "I2C.h"
+
+#include "CameraMotors.h"
 
 void TwoServoMoter()
 {

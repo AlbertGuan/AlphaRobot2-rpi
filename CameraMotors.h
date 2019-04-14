@@ -5,11 +5,11 @@
  *      Author: aobog
  */
 
-#ifndef I2C_H_
-#define I2C_H_
+#ifndef CAMERAMOTORS_H_
+#define CAMERAMOTORS_H_
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 
 void rpiI2CInit();
 
-#endif /* I2C_H_ */
+#endif /* CAMERAMOTORS_H_ */
