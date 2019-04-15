@@ -123,6 +123,5 @@ void rpiI2CInit()
 		lr_val = LEFT_RIGTH_MIN + (LEFT_RIGTH_RANGE * percentage) / 100;
 		ud_val = UP_DOWN_MIN + (UP_DOWN_RANGE * percentage) / 100;
 	}
-
 }
 

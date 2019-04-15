@@ -16,46 +16,7 @@
 #include <wiringPi.h>
 
 #include "CameraMotors.h"
-
-void TwoServoMoter()
-{
-	//Up and down: 100 - 160
-#define PWM_PIN_UP_DOWN			1
-	//Left and right: 60 - 210
-#define PWM_PIN_LEFT_RIGHT		24
-	pinMode(PWM_PIN_UP_DOWN, PWM_OUTPUT);
-	pinMode(PWM_PIN_LEFT_RIGHT, PWM_OUTPUT);
-	pwmSetMode(PWM_MODE_MS);
-	pwmSetRange(2000);
-	pwmSetClock(192);
-
-	unsigned int val = 0;
-	int inc = 1;
-	while (1)
-	{
-		pwmWrite(PWM_PIN_UP_DOWN, 100 + val);
-		pwmWrite(PWM_PIN_LEFT_RIGHT, 60 + val * 2);
-		usleep(100000ULL);
-		if (inc)
-		{
-			++val;
-			if (val >= 60)
-			{
-				val = 60;
-				inc = 0;
-			}
-		}
-		else
-		{
-			--val;
-			if (val <= 0)
-			{
-				val = 0;
-				inc = 1;
-			}
-		}
-	}
-}
+#include "RGBControl.h"
 
 void gpio_17_18_led_ctrl()
 {
@@ -94,6 +55,7 @@ int main(int argc, char *argv[])
 
 	//rpiI2CInit();
 
+	RBGControl();
 	return 0;
 }
 
