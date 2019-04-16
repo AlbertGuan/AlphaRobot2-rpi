@@ -17,6 +17,7 @@
 
 #include "CameraMotors.h"
 #include "RGBControl.h"
+#include "DMA.h"
 
 void gpio_17_18_led_ctrl()
 {
@@ -55,7 +56,9 @@ int main(int argc, char *argv[])
 
 	//rpiI2CInit();
 
-	RBGControl();
+	//RBGControl();
+
+	dma_main();
 	return 0;
 }
 
