@@ -110,14 +110,14 @@ void writeBitmasked(volatile uint32_t *dest, uint32_t mask, uint32_t value)
 //now, virt[N] exists for 0 <= N < PAGE_SIZE,
 //  and phys+N is the physical address for virt[N]
 //based on http://www.raspians.com/turning-the-raspberry-pi-into-an-fm-transmitter/
-void makeVirtPhysPage(void** virtAddr, void** physAddr)
+void makeVirtPhysPage(volatile void** virtAddr, volatile void** physAddr)
 {
 	*virtAddr = valloc(PAGE_SIZE); //allocate one page of RAM
 
 	//force page into RAM and then lock it there:
 	((int*) *virtAddr)[0] = 1;
-	mlock(*virtAddr, PAGE_SIZE);
-	memset(*virtAddr, 0, PAGE_SIZE); //zero-fill the page for convenience
+	mlock((const void *)*virtAddr, PAGE_SIZE);
+	memset((void *)*virtAddr, 0, PAGE_SIZE); //zero-fill the page for convenience
 
 	//Magic to determine the physical address for this page:
 	uint64_t pageInfo;
@@ -133,10 +133,10 @@ void makeVirtPhysPage(void** virtAddr, void** physAddr)
 }
 
 //call with virtual address to deallocate a page allocated with makeVirtPhysPage
-void freeVirtPhysPage(void* virtAddr)
+void freeVirtPhysPage(volatile void* virtAddr)
 {
-	munlock(virtAddr, PAGE_SIZE);
-	free(virtAddr);
+	munlock((const void *)virtAddr, PAGE_SIZE);
+	free((void *)virtAddr);
 }
 
 //map a physical address into our virtual address space. memfd is the file descriptor for /dev/mem
@@ -155,6 +155,21 @@ volatile uint32_t* mapPeripheral(int memfd, int addr)
 		printf("mapped: %p\n", mapped);
 	}
 	return (volatile uint32_t*) mapped;
+}
+
+void clearcache(char* begin, char *end)
+{
+	const int syscall = 0xf0002;
+	__asm __volatile (
+		"mov	 r0, %0\n"
+		"mov	 r1, %1\n"
+		"mov	 r7, %2\n"
+		"mov     r2, #0x0\n"
+		"svc     0x00000000\n"
+		:
+		:	"r" (begin), "r" (end), "r" (syscall)
+		:	"r0", "r1", "r7"
+		);
 }
 
 int dma_main()
@@ -178,9 +193,9 @@ int dma_main()
 
 	//configure DMA:
 	//allocate 1 page for the source and 1 page for the destination:
-	void *virtSrcPage, *physSrcPage;
+	volatile void *virtSrcPage, *physSrcPage;
 	makeVirtPhysPage(&virtSrcPage, &physSrcPage);
-	void *virtDestPage, *physDestPage;
+	volatile void *virtDestPage, *physDestPage;
 	makeVirtPhysPage(&virtDestPage, &physDestPage);
 
 	//write a few bytes to the source page:
@@ -197,19 +212,20 @@ int dma_main()
 	srcArray[9] = 'l';
 	srcArray[10] = 'd';
 	srcArray[11] = '\0'; //null terminator used for printf call.
-
-	void *test_map = mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, memfd, (unsigned int)physSrcPage);
-	printf("src: %s\tdest:%s\n", (char *)virtSrcPage, (char*)test_map);
-	char *test_str = (char *)test_map;
-	test_str[0] = 'd';
-	test_str[1] = 'e';
-	test_str[2] = 'b';
-	test_str[3] = 'u';
-	test_str[4] = 'g';
-	test_str[5] = '\0';
-	printf("src: %s\tdest:%s\n", (char *)virtSrcPage, (char*)test_map);
+	//__clear_cache((void *)virtSrcPage, (void *)(virtSrcPage + 12));
+	clearcache((char *)virtSrcPage, (char *)virtSrcPage + 12);
+//	void *test_map = mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, memfd, (unsigned int)physSrcPage);
+//	printf("src: %s\tdest:%s\n", (char *)virtSrcPage, (char*)test_map);
+//	char *test_str = (char *)test_map;
+//	test_str[0] = 'd';
+//	test_str[1] = 'e';
+//	test_str[2] = 'b';
+//	test_str[3] = 'u';
+//	test_str[4] = 'g';
+//	test_str[5] = '\0';
+//	printf("src: %s\tdest:%s\n", (char *)virtSrcPage, (char*)test_map);
 	//allocate 1 page for the control blocks
-	void *virtCbPage, *physCbPage;
+	volatile void *virtCbPage, *physCbPage;
 	makeVirtPhysPage(&virtCbPage, &physCbPage);
 
 	//dedicate the first 8 words of this page to holding the cb.
