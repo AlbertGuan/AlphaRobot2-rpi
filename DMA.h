@@ -64,5 +64,6 @@ For more information, please refer to <http://unlicense.org/>
 #endif
 
 int dma_main();
+void mailbox_dma();
 
 #endif /* DMA_H_ */

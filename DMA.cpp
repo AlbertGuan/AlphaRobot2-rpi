@@ -157,19 +157,60 @@ volatile uint32_t* mapPeripheral(int memfd, int addr)
 	return (volatile uint32_t*) mapped;
 }
 
-void clearcache(char* begin, char *end)
+#include "mailbox.h"
+#define BUS_TO_PHYS(x) ((x)&~0xC0000000)
+#define DMA_NO_WIDE_BURSTS	(1<<26)
+#define DMA_WAIT_RESP		(1<<3)
+#define DMA_D_DREQ		(1<<6)
+#define DMA_PER_MAP(x)		((x)<<16)
+#define DMA_END			(1<<1)
+#define DMA_RESET		(1<<31)
+#define DMA_INT			(1<<2)
+
+#define DMA_CS			(0x00/4)
+#define DMA_CONBLK_AD		(0x04/4)
+#define DMA_SOURCE_AD		(0x0c/4)
+#define DMA_DEBUG		(0x20/4)
+
+static struct {
+	int handle;		/* From mbox_open() */
+	uint32_t size;		/* Required size */
+	unsigned mem_ref;	/* From mem_alloc() */
+	unsigned bus_addr;	/* From mem_lock() */
+	uint8_t *virt_addr;	/* From mapmem() */
+} mbox;
+
+typedef struct {
+	uint32_t info, src, dst, length,
+		 stride, next, pad[2];
+} dma_cb_t;
+
+static uint32_t mem_virt_to_phys(volatile void *virt)
 {
-	const int syscall = 0xf0002;
-	__asm __volatile (
-		"mov	 r0, %0\n"
-		"mov	 r1, %1\n"
-		"mov	 r7, %2\n"
-		"mov     r2, #0x0\n"
-		"svc     0x00000000\n"
-		:
-		:	"r" (begin), "r" (end), "r" (syscall)
-		:	"r0", "r1", "r7"
-		);
+	uint32_t offset = (uint8_t *)virt - mbox.virt_addr;
+
+	return mbox.bus_addr + offset;
+}
+
+static uint32_t mem_flag = 0x04;
+//static dma_cb_t *cb_base;
+void mailbox_dma()
+{
+	mbox.handle = -1; // mbox_open();
+	mbox.size = 4096;
+	mbox.mem_ref = mem_alloc(mbox.handle, mbox.size, 4096, mem_flag);
+	if (mbox.mem_ref < 0)
+	{
+		printf("Failed to alloc memory from VideoCore\n");
+	}
+	mbox.bus_addr = mem_lock(mbox.handle, mbox.mem_ref);
+	if (mbox.bus_addr == ~0u)
+	{
+		mem_free(mbox.handle, mbox.size);
+		printf("Failed to lock memory\n");
+	}
+	mbox.virt_addr = (uint8_t*) mapmem(BUS_TO_PHYS(mbox.bus_addr), mbox.size);
+
 }
 
 int dma_main()
@@ -194,9 +235,28 @@ int dma_main()
 	//configure DMA:
 	//allocate 1 page for the source and 1 page for the destination:
 	volatile void *virtSrcPage, *physSrcPage;
-	makeVirtPhysPage(&virtSrcPage, &physSrcPage);
+	//makeVirtPhysPage(&virtSrcPage, &physSrcPage);
 	volatile void *virtDestPage, *physDestPage;
-	makeVirtPhysPage(&virtDestPage, &physDestPage);
+	//makeVirtPhysPage(&virtDestPage, &physDestPage);
+
+	mbox.handle = -1; // mbox_open();
+	mbox.size = 4096;
+	mbox.mem_ref = mem_alloc(mbox.handle, mbox.size, 4096, mem_flag);
+	if (mbox.mem_ref < 0)
+	{
+		printf("Failed to alloc memory from VideoCore\n");
+	}
+	mbox.bus_addr = mem_lock(mbox.handle, mbox.mem_ref);
+	if (mbox.bus_addr == ~0u)
+	{
+		mem_free(mbox.handle, mbox.size);
+		printf("Failed to lock memory\n");
+	}
+	mbox.virt_addr = (uint8_t*) mapmem(BUS_TO_PHYS(mbox.bus_addr), mbox.size);
+	virtSrcPage = (volatile void *)mbox.virt_addr;
+	physSrcPage = (volatile void *)mem_virt_to_phys(virtSrcPage);
+	virtDestPage = (volatile void *)(mbox.virt_addr + 12);
+	physDestPage = (volatile void *)mem_virt_to_phys(virtDestPage);
 
 	//write a few bytes to the source page:
 	char *srcArray = (char*) virtSrcPage;
@@ -212,24 +272,16 @@ int dma_main()
 	srcArray[9] = 'l';
 	srcArray[10] = 'd';
 	srcArray[11] = '\0'; //null terminator used for printf call.
-	//__clear_cache((void *)virtSrcPage, (void *)(virtSrcPage + 12));
-	clearcache((char *)virtSrcPage, (char *)virtSrcPage + 12);
-//	void *test_map = mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, memfd, (unsigned int)physSrcPage);
-//	printf("src: %s\tdest:%s\n", (char *)virtSrcPage, (char*)test_map);
-//	char *test_str = (char *)test_map;
-//	test_str[0] = 'd';
-//	test_str[1] = 'e';
-//	test_str[2] = 'b';
-//	test_str[3] = 'u';
-//	test_str[4] = 'g';
-//	test_str[5] = '\0';
-//	printf("src: %s\tdest:%s\n", (char *)virtSrcPage, (char*)test_map);
+
 	//allocate 1 page for the control blocks
 	volatile void *virtCbPage, *physCbPage;
 	makeVirtPhysPage(&virtCbPage, &physCbPage);
+//	virtCbPage = (volatile void *)(mbox.virt_addr + 24);
+//	physCbPage = (volatile void *)mem_virt_to_phys(virtCbPage);
 
 	//dedicate the first 8 words of this page to holding the cb.
 	volatile struct DmaControlBlock *cb1 = (struct DmaControlBlock*) virtCbPage;
+
 
 	//fill the control block:
 	cb1->TI = DMA_CB_TI_SRC_INC | DMA_CB_TI_DEST_INC; //after each byte copied, we want to increment the source and destination address of the copy, otherwise we'll be copying to the same address.
@@ -239,7 +291,7 @@ int dma_main()
 	cb1->STRIDE = 0; //no 2D stride
 	cb1->NEXTCONBK = 0; //no next control block
 
-	printf("destination was initially: src: %s, dest: %s, cb addr: 0x%p\n", (char *)virtSrcPage, (char*) virtDestPage, physCbPage);
+	printf("destination was initially: src: %s (%p), dest: %s, cb addr: 0x%p\n", (char *)virtSrcPage, physSrcPage, (char*) virtDestPage, physCbPage);
 
 	//enable DMA channel (it's probably already enabled, but we want to be sure):
 	writeBitmasked(dmaBaseMem + DMAENABLE / 4, 1 << dmaChNum, 1 << dmaChNum);
@@ -266,9 +318,19 @@ int dma_main()
 	printf("dmaHeader->NEXTCONBK: \t0x%08x\n", dmaHeader->NEXTCONBK);
 	printf("dmaHeader->DEBUG: \t0x%08x\n", dmaHeader->DEBUG);
 
+	dmaHeader->CS = DMA_CS_RESET;
+	sleep(1);
+	if (mbox.virt_addr)
+	{
+		unmapmem(mbox.virt_addr, mbox.size);
+		mem_unlock(mbox.handle, mbox.mem_ref);
+		mem_free(mbox.handle, mbox.mem_ref);
+		if (mbox.handle >= 0)
+			mbox_close(mbox.handle);
+	}
 	//cleanup
 	freeVirtPhysPage(virtCbPage);
-	freeVirtPhysPage(virtDestPage);
-	freeVirtPhysPage(virtSrcPage);
+//	freeVirtPhysPage(virtDestPage);
+//	freeVirtPhysPage(virtSrcPage);
 	return 0;
 }

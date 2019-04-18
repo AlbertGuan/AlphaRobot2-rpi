@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
 	//RBGControl();
 
 	dma_main();
+
 	return 0;
 }
 
