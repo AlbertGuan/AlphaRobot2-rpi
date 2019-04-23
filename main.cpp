@@ -56,9 +56,11 @@ int main(int argc, char *argv[])
 
 	//rpiI2CInit();
 
-	//RBGControl();
+//	RBGControl();
 
-	dma_main();
+	//dma_main();
+
+	PWMTest();
 
 	return 0;
 }
