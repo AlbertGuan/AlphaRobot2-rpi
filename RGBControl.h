@@ -129,7 +129,8 @@ typedef struct
 class PWMCtrl
 {
 public:
-	PWMCtrl(int32_t pin, int32_t mode, int32_t range, int32_t clk_div);
+	PWMCtrl();
+	PWMCtrl(int32_t pin, int32_t mode, int32_t range, int32_t freq);
 	~PWMCtrl();
 
 	void SetMode(uint32_t mode);
@@ -137,8 +138,9 @@ public:
 	void SetClock(int32_t clk_div);
 	void pwmWrite(uint32_t val);
 
-
-	void PrintAddress();
+	static void PrintAddress();
+	static void PWMAddrInit();
+	static void DumpRegisters();
 
 	typedef enum
 	{

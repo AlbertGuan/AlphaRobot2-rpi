@@ -5,11 +5,13 @@
  *      Author: aobog
  */
 #include <iostream>
+#include <iomanip>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
  #include <sys/mman.h>
 #include <fcntl.h>
+
 
 #include "RGBControl.h"
 
@@ -47,7 +49,7 @@ uint32_t set_bits(uint32_t org, uint32_t val, int lbit, int rbit)
 	return org;
 }
 
-PWMCtrl::PWMCtrl(int32_t pin, int32_t mode, int32_t range, int32_t divisor)
+void PWMCtrl::PWMAddrInit()
 {
 	using namespace std;
 	if (mem_fd != 0)
@@ -80,14 +82,60 @@ PWMCtrl::PWMCtrl(int32_t pin, int32_t mode, int32_t range, int32_t divisor)
 		CM_PERIIDIV = (uint32_t *)((uint32_t)clk_base + CM_PERIIDIV_OFFSET);
 	}
 
-	PrintAddress();
+	//PrintAddress();
 
+//	DumpRegisters();
+}
+
+void PWMCtrl::PrintAddress()
+{
+	using namespace std;
+	cout << "pwm_base->CTL:\t\t0x" << setw(8) << hex << (uint32_t)&pwm_base->CTL << endl;
+	cout << "pwm_base->STA:\t\t0x" << setw(8) << hex << (uint32_t)&pwm_base->STA << endl;
+	cout << "pwm_base->DMAC:\t\t0x" << setw(8) << hex << (uint32_t)&pwm_base->DMAC << endl;
+	cout << "pwm_base->RNG1:\t\t0x" << setw(8) << hex << (uint32_t)&pwm_base->RNG1 << endl;
+	cout << "pwm_base->DAT1:\t\t0x" << setw(8) << hex << (uint32_t)&pwm_base->DAT1 << endl;
+	cout << "pwm_base->FIF1:\t\t0x" << setw(8) << hex << (uint32_t)&pwm_base->FIF1 << endl;
+	cout << "pwm_base->RNG2:\t\t0x" << setw(8) << hex << (uint32_t)&pwm_base->RNG2 << endl;
+	cout << "pwm_base->DAT2:\t\t0x" << setw(8) << hex << (uint32_t)&pwm_base->DAT2 << endl;
+}
+
+void PWMCtrl::DumpRegisters()
+{
+	using namespace std;
+	for (int i = 0; i < 6; ++i)
+		cout << "gpio_base->select[" << i << "]:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&gpio_base->select[i] << "\t Val: " << setw(8) << hex << gpio_base->select[i] << endl;
+	cout << endl;
+
+	cout << "pwm_base->CTL:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&pwm_base->CTL << "\t Val: " << setw(8) << hex << pwm_base->CTL.word << endl;
+	cout << "pwm_base->STA:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&pwm_base->STA << "\t Val: " << setw(8) << hex << pwm_base->STA.word << endl;
+	cout << "pwm_base->DMAC:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&pwm_base->DMAC << "\t Val: " << setw(8) << hex << pwm_base->DMAC.word << endl;
+	cout << "pwm_base->RNG1:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&pwm_base->RNG1 << "\t Val: " << setw(8) << hex << pwm_base->RNG1 << endl;
+	cout << "pwm_base->DAT1:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&pwm_base->DAT1 << "\t Val: " << setw(8) << hex << pwm_base->DAT1 << endl;
+	cout << "pwm_base->FIF1:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&pwm_base->FIF1 << "\t Val: " << setw(8) << hex << pwm_base->FIF1 << endl;
+	cout << "pwm_base->RNG2:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&pwm_base->RNG2 << "\t Val: " << setw(8) << hex << pwm_base->RNG2 << endl;
+	cout << "pwm_base->DAT2:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)&pwm_base->DAT2 << "\t Val: " << setw(8) << hex << pwm_base->DAT2 << endl;
+	cout << endl;
+
+	cout << "CM_PERIICTL:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)CM_PERIICTL << "\t Val: " << setw(8) << hex << *CM_PERIICTL << endl;
+	cout << "CM_PERIIDIV:\t\tAddr: 0x" << setw(8) << hex << (uint32_t)CM_PERIIDIV << "\t Val: " << setw(8) << hex << *CM_PERIIDIV << endl;
+}
+
+PWMCtrl::PWMCtrl()
+{
+	PWMCtrl::PWMAddrInit();
+}
+
+PWMCtrl::PWMCtrl(int32_t pin, int32_t mode, int32_t range, int32_t freq)
+{
+	using namespace std;
+	PWMCtrl::PWMAddrInit();
+
+	int32_t divisor = PWMCtrl::PWM_CLK_SRC_REQ / freq;
 	switch (pin)
 	{
 		case 12:
-		{
 			break;
-		}
 		case 13:
 			break;
 		case 18:
@@ -98,7 +146,8 @@ PWMCtrl::PWMCtrl(int32_t pin, int32_t mode, int32_t range, int32_t divisor)
 				m_range = range;
 				cout << "Setting pin 18 to PWM" << endl;
 				cout << "pin selection[1] before changing: " << hex << gpio_base->select[1] << endl;
-				gpio_base->select[1] = set_bits(gpio_base->select[1], 5, 26, 24);
+				//Note: Value of FSEL_ALT are not 0-5
+				gpio_base->select[1] = set_bits(gpio_base->select[1], FSEL_ALT_5, 26, 24);
 				cout << "pin selection[1] after changing: " << hex << gpio_base->select[1] << endl;
 				usleep(200);
 				cout << "Set mode to " << mode << endl;
@@ -131,6 +180,7 @@ PWMCtrl::PWMCtrl(int32_t pin, int32_t mode, int32_t range, int32_t divisor)
 			cout << "Unsupported PWM pin: " << pin << endl;
 			break;
 	}
+	//PWMCtrl::DumpRegisters();
 }
 
 PWMCtrl::~PWMCtrl()
@@ -138,18 +188,6 @@ PWMCtrl::~PWMCtrl()
 	//ToDo: To be implemented
 }
 
-void PWMCtrl::PrintAddress()
-{
-	using namespace std;
-	cout << "pwm_base->CTL:\t\t0x" << hex << (uint32_t)&pwm_base->CTL << endl;
-	cout << "pwm_base->STA:\t\t0x" << hex << (uint32_t)&pwm_base->STA << endl;
-	cout << "pwm_base->DMAC:\t\t0x" << hex << (uint32_t)&pwm_base->DMAC << endl;
-	cout << "pwm_base->RNG1:\t\t0x" << hex << (uint32_t)&pwm_base->RNG1 << endl;
-	cout << "pwm_base->DAT1:\t\t0x" << hex << (uint32_t)&pwm_base->DAT1 << endl;
-	cout << "pwm_base->FIF1:\t\t0x" << hex << (uint32_t)&pwm_base->FIF1 << endl;
-	cout << "pwm_base->RNG2:\t\t0x" << hex << (uint32_t)&pwm_base->RNG2 << endl;
-	cout << "pwm_base->DAT2:\t\t0x" << hex << (uint32_t)&pwm_base->DAT2 << endl;
-}
 /* Unfortunately, the description to clock manager of BCM2835/2827 is missing in the datasheet
  * I'm trying to "reverse-engineering" the wiringPi library along with information I can find
  * through Google.
@@ -205,6 +243,7 @@ void PWMCtrl::pwmWrite(uint32_t val)
 		pwm_base->DAT2 = val;
 }
 
+
 void PWMTest()
 {
 	PWMCtrl pwm(18, PWMCtrl::PWM_MODE_M_S, 100, 24);
@@ -214,7 +253,6 @@ void PWMTest()
 		usleep(1000);
 	}
 }
-
 
 void TwoServoMotor()
 {
