@@ -101,7 +101,6 @@ void writeBitmasked(volatile uint32_t *dest, uint32_t mask, uint32_t value)
 	*dest = another; //added safety for when crossing memory barriers.
 }
 
-
 //allocate a page & simultaneously determine its physical address.
 //virtAddr and physAddr are essentially passed by-reference.
 //this allows for:
@@ -121,10 +120,7 @@ void makeVirtPhysPage(volatile void** virtAddr, volatile void** physAddr)
 
 	//Magic to determine the physical address for this page:
 	uint64_t pageInfo;
-	char pagemap_fn[64];
-	int pid = getpid();
-	sprintf(pagemap_fn, "/proc/%d/pagemap", pid);
-	int file = open(pagemap_fn, 'r');
+	int file = open("/proc/self/pagemap", 'r');
 	lseek(file, ((size_t) *virtAddr) >> 9, SEEK_SET);
 	read(file, &pageInfo, 8);
 
@@ -157,62 +153,6 @@ volatile uint32_t* mapPeripheral(int memfd, int addr)
 	return (volatile uint32_t*) mapped;
 }
 
-#include "mailbox.h"
-#define BUS_TO_PHYS(x) ((x)&~0xC0000000)
-#define DMA_NO_WIDE_BURSTS	(1<<26)
-#define DMA_WAIT_RESP		(1<<3)
-#define DMA_D_DREQ		(1<<6)
-#define DMA_PER_MAP(x)		((x)<<16)
-#define DMA_END			(1<<1)
-#define DMA_RESET		(1<<31)
-#define DMA_INT			(1<<2)
-
-#define DMA_CS			(0x00/4)
-#define DMA_CONBLK_AD		(0x04/4)
-#define DMA_SOURCE_AD		(0x0c/4)
-#define DMA_DEBUG		(0x20/4)
-
-static struct {
-	int handle;		/* From mbox_open() */
-	uint32_t size;		/* Required size */
-	unsigned mem_ref;	/* From mem_alloc() */
-	unsigned bus_addr;	/* From mem_lock() */
-	uint8_t *virt_addr;	/* From mapmem() */
-} mbox;
-
-typedef struct {
-	uint32_t info, src, dst, length,
-		 stride, next, pad[2];
-} dma_cb_t;
-
-static uint32_t mem_virt_to_phys(volatile void *virt)
-{
-	uint32_t offset = (uint8_t *)virt - mbox.virt_addr;
-
-	return mbox.bus_addr + offset;
-}
-
-static uint32_t mem_flag = 0x04;
-//static dma_cb_t *cb_base;
-void mailbox_dma()
-{
-	mbox.handle = -1; // mbox_open();
-	mbox.size = 4096;
-	mbox.mem_ref = mem_alloc(mbox.handle, mbox.size, 4096, mem_flag);
-	if (mbox.mem_ref < 0)
-	{
-		printf("Failed to alloc memory from VideoCore\n");
-	}
-	mbox.bus_addr = mem_lock(mbox.handle, mbox.mem_ref);
-	if (mbox.bus_addr == ~0u)
-	{
-		mem_free(mbox.handle, mbox.size);
-		printf("Failed to lock memory\n");
-	}
-	mbox.virt_addr = (uint8_t*) mapmem(BUS_TO_PHYS(mbox.bus_addr), mbox.size);
-
-}
-
 int dma_main()
 {
 	//cat /sys/module/dma/parameters/dmachans gives a bitmask of DMA channels that are not used by GPU. Results: ch 1, 3, 6, 7 are reserved.
@@ -235,28 +175,9 @@ int dma_main()
 	//configure DMA:
 	//allocate 1 page for the source and 1 page for the destination:
 	volatile void *virtSrcPage, *physSrcPage;
-	//makeVirtPhysPage(&virtSrcPage, &physSrcPage);
+	makeVirtPhysPage(&virtSrcPage, &physSrcPage);
 	volatile void *virtDestPage, *physDestPage;
-	//makeVirtPhysPage(&virtDestPage, &physDestPage);
-
-	mbox.handle = -1; // mbox_open();
-	mbox.size = 4096;
-	mbox.mem_ref = mem_alloc(mbox.handle, mbox.size, 4096, mem_flag);
-	if (mbox.mem_ref < 0)
-	{
-		printf("Failed to alloc memory from VideoCore\n");
-	}
-	mbox.bus_addr = mem_lock(mbox.handle, mbox.mem_ref);
-	if (mbox.bus_addr == ~0u)
-	{
-		mem_free(mbox.handle, mbox.size);
-		printf("Failed to lock memory\n");
-	}
-	mbox.virt_addr = (uint8_t*) mapmem(BUS_TO_PHYS(mbox.bus_addr), mbox.size);
-	virtSrcPage = (volatile void *)mbox.virt_addr;
-	physSrcPage = (volatile void *)mem_virt_to_phys(virtSrcPage);
-	virtDestPage = (volatile void *)(mbox.virt_addr + 12);
-	physDestPage = (volatile void *)mem_virt_to_phys(virtDestPage);
+	makeVirtPhysPage(&virtDestPage, &physDestPage);
 
 	//write a few bytes to the source page:
 	char *srcArray = (char*) virtSrcPage;
@@ -276,8 +197,6 @@ int dma_main()
 	//allocate 1 page for the control blocks
 	volatile void *virtCbPage, *physCbPage;
 	makeVirtPhysPage(&virtCbPage, &physCbPage);
-//	virtCbPage = (volatile void *)(mbox.virt_addr + 24);
-//	physCbPage = (volatile void *)mem_virt_to_phys(virtCbPage);
 
 	//dedicate the first 8 words of this page to holding the cb.
 	volatile struct DmaControlBlock *cb1 = (struct DmaControlBlock*) virtCbPage;
@@ -320,17 +239,98 @@ int dma_main()
 
 	dmaHeader->CS = DMA_CS_RESET;
 	sleep(1);
-	if (mbox.virt_addr)
-	{
-		unmapmem(mbox.virt_addr, mbox.size);
-		mem_unlock(mbox.handle, mbox.mem_ref);
-		mem_free(mbox.handle, mbox.mem_ref);
-		if (mbox.handle >= 0)
-			mbox_close(mbox.handle);
-	}
+
 	//cleanup
 	freeVirtPhysPage(virtCbPage);
-//	freeVirtPhysPage(virtDestPage);
-//	freeVirtPhysPage(virtSrcPage);
+	freeVirtPhysPage(virtDestPage);
+	freeVirtPhysPage(virtSrcPage);
 	return 0;
+}
+
+DMACtrl::DMACtrl(int32_t channel_num, uint32_t src_len)
+	: m_ch(channel_num),
+	  m_dest_virtual(NULL),
+	  m_dest_physical(NULL)
+{
+	if (src_len > PAGE_SIZE)
+	{
+		std::cout << "Doesn't support DMA more than PAGE_SIZE(" <<PAGE_SIZE << ") bytes of data" << std::endl;
+		exit(1);
+	}
+
+	if (DMACtrl::GeneralInit(channel_num) > 0)
+	{
+		AllocMemory(&m_src_virtual);
+		GetPhyAddr(&m_src_virtual, &m_src_physical);
+
+		AllocMemory(&m_cb_virtual);
+		GetPhyAddr(&m_cb_virtual, &m_cb_physical);
+
+
+
+
+		DMACtrl::MarkChannelInUse(channel_num);
+	}
+}
+
+volatile void *DMACtrl::getSrcVirtAddr()
+{
+	return m_src_virtual;
+}
+
+
+
+int32_t DMACtrl::GeneralInit(int32_t channel_num)
+{
+	if (mem_fd < 0)
+	{
+		mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+		if (mem_fd < 0)
+		{
+			std::cout << "Failed to open /dev/mem (did you remember to run as root?)\n";
+			exit(1);
+		}
+	}
+	if (channel_in_use & (0x1 << channel_num))
+	{
+		std::cout << "Channel " << channel_num << " is already in use!\n";
+		return -1;
+	}
+
+	return 0;
+}
+
+void DMACtrl::MarkChannelInUse(int32_t channel_num)
+{
+	DMACtrl::channel_in_use |= 0x1 << channel_num;
+}
+
+int32_t DMACtrl::AllocMemory(volatile void **vir)
+{
+	*vir = valloc(PAGE_SIZE); //allocate one page of RAM
+
+	//force page into RAM and then lock it there:
+	((int*) *vir)[0] = 1;
+	mlock((const void *)*vir, PAGE_SIZE);
+
+	return 0;
+}
+
+int32_t DMACtrl::GetPhyAddr(volatile void **vir, volatile void **phy)
+{
+	//Magic to determine the physical address for this page:
+	uint64_t pageInfo;
+	int file = open("/proc/self/pagemap", 'r');
+	lseek(file, ((size_t) *vir) >> 9, SEEK_SET);
+	read(file, &pageInfo, 8);
+
+	*phy = (void*) (size_t) (pageInfo * PAGE_SIZE);
+	printf("makeVirtPhysPage virtual to phys: %p -> %p\n", *vir, *phy);
+	return 0;
+}
+
+void DMACtrl::FreeMemory(volatile void **vir)
+{
+	munlock((const void *)vir, PAGE_SIZE);
+	free((void *)vir);
 }

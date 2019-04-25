@@ -18,6 +18,8 @@
 #include "CameraMotors.h"
 #include "RGBControl.h"
 #include "DMA.h"
+#include "PWM.h"
+
 
 void gpio_17_18_led_ctrl()
 {
@@ -58,9 +60,9 @@ int main(int argc, char *argv[])
 
 //	RBGControl();
 
-	//dma_main();
+	dma_main();
 
-	PWMTest();
+//	PWMTest();
 
 	return 0;
 }
