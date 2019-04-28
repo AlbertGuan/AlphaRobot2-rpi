@@ -1,3 +1,4 @@
+#include <iostream>
 #include <sys/mman.h> //for mmap
 #include <unistd.h> //for NULL
 #include <stdio.h> //for printf
@@ -228,10 +229,10 @@ int dma_main()
 	printf("destination reads: src: %s, dest: %s\n", (char *)virtSrcPage, (char*) virtDestPage);
 
 	printf("dmaHeader->CS: \t0x%08x\n", dmaHeader->CS);
-	printf("dmaHeader->CONBLK_AD: \t0x%08x\n", dmaHeader->CONBLK_AD);
+	printf("dmaHeader->CONBLK_AD: \t0x%08x\t0x%08x\n", dmaHeader->CONBLK_AD, (uint32_t)physCbPage);
 	printf("dmaHeader->TI: \t0x%08x\n", dmaHeader->TI);
-	printf("dmaHeader->SOURCE_AD: \t0x%08x\n", dmaHeader->SOURCE_AD);
-	printf("dmaHeader->DEST_AD: \t0x%08x\n", dmaHeader->DEST_AD);
+	printf("dmaHeader->SOURCE_AD: \t0x%08x\t0x%08x\n", dmaHeader->SOURCE_AD, (uint32_t)physSrcPage);
+	printf("dmaHeader->DEST_AD: \t0x%08x\t0x%08x\n", dmaHeader->DEST_AD, (uint32_t)physDestPage);
 	printf("dmaHeader->TXFR_LEN: \t0x%08x\n", dmaHeader->TXFR_LEN);
 	printf("dmaHeader->STRIDE: \t0x%08x\n", dmaHeader->STRIDE);
 	printf("dmaHeader->NEXTCONBK: \t0x%08x\n", dmaHeader->NEXTCONBK);
@@ -244,13 +245,18 @@ int dma_main()
 	freeVirtPhysPage(virtCbPage);
 	freeVirtPhysPage(virtDestPage);
 	freeVirtPhysPage(virtSrcPage);
+
+	DMACtrl dma(5, 12);
+	dma.dma_test();
 	return 0;
 }
 
+int32_t DMACtrl::mem_fd = -1;
+uint32_t DMACtrl::channel_in_use = 0;
+volatile DMAReg_t *DMACtrl::dma_regs = NULL;
+
 DMACtrl::DMACtrl(int32_t channel_num, uint32_t src_len)
-	: m_ch(channel_num),
-	  m_dest_virtual(NULL),
-	  m_dest_physical(NULL)
+	: m_ch(channel_num)
 {
 	if (src_len > PAGE_SIZE)
 	{
@@ -258,19 +264,24 @@ DMACtrl::DMACtrl(int32_t channel_num, uint32_t src_len)
 		exit(1);
 	}
 
-	if (DMACtrl::GeneralInit(channel_num) > 0)
+	if (DMACtrl::GeneralInit(channel_num) >= 0)
 	{
 		AllocMemory(&m_src_virtual);
 		GetPhyAddr(&m_src_virtual, &m_src_physical);
 
+		AllocMemory(&m_dest_virtual);
+		GetPhyAddr(&m_dest_virtual, &m_dest_physical);
+
 		AllocMemory(&m_cb_virtual);
 		GetPhyAddr(&m_cb_virtual, &m_cb_physical);
 
-
-
-
 		DMACtrl::MarkChannelInUse(channel_num);
 	}
+}
+
+DMACtrl::~DMACtrl()
+{
+
 }
 
 volatile void *DMACtrl::getSrcVirtAddr()
@@ -278,7 +289,46 @@ volatile void *DMACtrl::getSrcVirtAddr()
 	return m_src_virtual;
 }
 
+void DMACtrl::dma_test()
+{
+	std::cout << "\n\ndma_test start" << std::endl;
+	char *srcArray = (char*) m_src_virtual;
+	srcArray[0] = 'h';
+	srcArray[1] = 'e';
+	srcArray[2] = 'l';
+	srcArray[3] = 'l';
+	srcArray[4] = 'o';
+	srcArray[5] = ' ';
+	srcArray[6] = 'w';
+	srcArray[7] = 'o';
+	srcArray[8] = 'r';
+	srcArray[9] = 'l';
+	srcArray[10] = 'd';
+	srcArray[11] = '\0'; //null terminator used for printf call.
 
+	volatile DMACtrlBlock_t *cb = (volatile DMACtrlBlock_t *)m_cb_virtual;
+	cb->transInfo.word = 0;
+	cb->transInfo.src_inc = 1;
+	cb->transInfo.dest_inc = 1;
+	cb->srcAddr = (uint32_t) m_src_physical; //set source and destination DMA address
+	cb->destAddr = (uint32_t) m_dest_physical;
+	cb->transLen.x_len = 12; //transfer 12 bytes
+	cb->stride.word = 0; //no 2D stride
+	cb->nextCB = DMACtrl::NO_NEXT_CB; //no next control block
+
+	dma_regs->enable |= 0x1 << m_ch;
+	dma_regs->ch[m_ch].cs.reset = 1;
+	sleep(1);
+	dma_regs->ch[m_ch].debug.read_err = 1;
+	dma_regs->ch[m_ch].debug.fifo_err = 1;
+	dma_regs->ch[m_ch].debug.read_last_not_set_err = 1;
+	dma_regs->ch[m_ch].cbAddr = (uint32_t) m_cb_physical;
+	dma_regs->ch[m_ch].cs.active = 1;
+	DMACtrl::debugPrintDMARegs();
+	sleep(1);
+	std::cout << "src: " << (char *)m_src_virtual << std::endl;
+	std::cout << "dest: " << (char *)m_dest_virtual << std::endl;
+}
 
 int32_t DMACtrl::GeneralInit(int32_t channel_num)
 {
@@ -289,6 +339,13 @@ int32_t DMACtrl::GeneralInit(int32_t channel_num)
 		{
 			std::cout << "Failed to open /dev/mem (did you remember to run as root?)\n";
 			exit(1);
+		}
+
+		dma_regs = (volatile DMAReg_t *)mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, DMA_BASE);
+		if (dma_regs == MAP_FAILED)
+		{
+			std::cout << "Failed to map dma_regs!" << std::endl;
+			exit(2);
 		}
 	}
 	if (channel_in_use & (0x1 << channel_num))
@@ -312,6 +369,7 @@ int32_t DMACtrl::AllocMemory(volatile void **vir)
 	//force page into RAM and then lock it there:
 	((int*) *vir)[0] = 1;
 	mlock((const void *)*vir, PAGE_SIZE);
+	memset((void *)*vir, 0, PAGE_SIZE);
 
 	return 0;
 }
@@ -325,7 +383,7 @@ int32_t DMACtrl::GetPhyAddr(volatile void **vir, volatile void **phy)
 	read(file, &pageInfo, 8);
 
 	*phy = (void*) (size_t) (pageInfo * PAGE_SIZE);
-	printf("makeVirtPhysPage virtual to phys: %p -> %p\n", *vir, *phy);
+	printf("GetPhyAddr virtual to phys: %p -> %p\n", *vir, *phy);
 	return 0;
 }
 
@@ -333,4 +391,19 @@ void DMACtrl::FreeMemory(volatile void **vir)
 {
 	munlock((const void *)vir, PAGE_SIZE);
 	free((void *)vir);
+}
+
+void DMACtrl::debugPrintDMARegs()
+{
+	printf("+m_ch: %d\n", m_ch);
+	printf("sizeof(DMAChannel_t): %d\n", sizeof(DMAChannel_t));
+	printf("+CtrlStatus: \t0x%08x\n", dma_regs->ch[m_ch].cs.word);
+	printf("+CBAddr: \t0x%08x, CBAddr: 0x%08x\n", dma_regs->ch[m_ch].cbAddr, (uint32_t)m_cb_physical);
+	printf("+TransInfo: \t0x%08x\n", dma_regs->ch[5].transInfo.word);
+	printf("+srcAddr: \t0x%08x, SrcAddr: 0x%08x\n", dma_regs->ch[m_ch].srcAddr, (uint32_t)m_src_physical);
+	printf("+destAddr: \t0x%08x, DestAddr: 0x%08x\n", dma_regs->ch[m_ch].destAddr, (uint32_t)m_dest_physical);
+	printf("+transLen: \t0x%08x\n", dma_regs->ch[m_ch].translen.word);
+	printf("+Stride: \t0x%08x\n", dma_regs->ch[m_ch].stride.word);
+	printf("+nextCB: \t0x%08x\n", dma_regs->ch[m_ch].nextCB);
+	printf("+Debug: \t0x%08x\n", dma_regs->ch[m_ch].debug.word);
 }

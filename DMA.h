@@ -138,13 +138,13 @@ typedef struct
 	DMAStride_t stride;
 	uint32_t nextCB;
 	DMADebug_t debug;
-	const uint32_t _padding[0x7C >> 2];
+	const uint32_t _padding[0xDC >> 2];
 }DMAChannel_t;
 
 typedef struct
 {
 	DMAChannel_t ch[15];
-	const uint32_t _padding[0x140 >> 2];
+	const uint32_t _padding[0x1BC >> 2];
 	uint32_t int_status;
 	const uint32_t _padding1[0xC >> 2];
 	uint32_t enable;
@@ -162,11 +162,16 @@ public:
 	static void FreeMemory(volatile void **vir);
 	static int32_t GetPhyAddr(volatile void **vir, volatile void **phy);
 
+	void debugPrintDMARegs();
+
 	volatile void *getSrcVirtAddr();
+
+	void dma_test();
 private:
 	static const uint32_t NO_NEXT_CB = 0x00000000;	//When nextCB is set to it, DMA controller won't load further CBs, and stop the DMA after current transfer
-	static int32_t mem_fd = -1;
-	static uint32_t channel_in_use = 0;
+	static int32_t mem_fd;
+	static uint32_t channel_in_use;
+	static volatile DMAReg_t *dma_regs;
 
 	int32_t m_ch;
 	volatile void *m_src_virtual;
