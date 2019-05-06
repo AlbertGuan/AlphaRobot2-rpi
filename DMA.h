@@ -5,25 +5,13 @@
  *      Author: aobog
  */
 
-#ifndef DMA_H_
-#define DMA_H_
-
-
+#pragma once
+#include "Rpi3BConstants.h"
+#include "WS2812BCtrl.h"
 /*
  * processor documentation for RPI1 at: http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
  * pg 38 for DMA
  */
-
-
-// RPI2 and 3 use a different chipset, and the peripheral addresses have changed.
-#define TIMER_BASE    0x3F003000
-#define DMA_BASE      0x3F007000
-#define CLOCK_BASE    0x3F101000 // Undocumented. Extrapolated from RPI_V1 CLOCK_BASE
-#define GPIO_BASE     0x3F200000
-#define PWM_BASE      0x3F20C000
-#define GPIO_BASE_BUS 0x7E200000 //this is the physical bus address of the GPIO module. This is only used when other peripherals directly connected to the bus (like DMA) need to read/write the GPIOs
-#define PWM_BASE_BUS  0x7E20C000
-
 
 int dma_main();
 
@@ -34,16 +22,16 @@ typedef union
 		uint32_t active					: 1;
 		uint32_t end					: 1;
 		uint32_t int_status				: 1;		//Set when transfer for the CB ends and INTEN is set to 1
-		const uint32_t dreq				: 1;		//Status of the selected data request signal
-		const uint32_t paused			: 1;
-		const uint32_t dreq_stops_dma	: 1;//Indicates the DMA is currently paused and not transferring data due to the DREQ being inactive
-		const uint32_t wait_for_write	: 1;
-		const uint32_t _reserve0		: 1;
-		const uint32_t error			: 1;
-		const uint32_t _reserve1		: 7;
+		uint32_t dreq				: 1;		//Status of the selected data request signal
+		uint32_t paused			: 1;
+		uint32_t dreq_stops_dma	: 1;//Indicates the DMA is currently paused and not transferring data due to the DREQ being inactive
+		uint32_t wait_for_write	: 1;
+		uint32_t _reserve0		: 1;
+		uint32_t error			: 1;
+		uint32_t _reserve1		: 7;
 		uint32_t priority				: 4;
 		uint32_t panic_priority			: 4;
-		const uint32_t _reserve2		: 4;
+		uint32_t _reserve2		: 4;
 		uint32_t wait_for_outstanding_wt: 1;
 		uint32_t disable_debug			: 1;
 		uint32_t abort					: 1;
@@ -118,11 +106,11 @@ typedef union
 typedef struct
 {
 	DMATransInfo_t transInfo;			//TI
-	uint32_t srcAddr;			//SOURCE_AD
-	uint32_t destAddr;			//DEST_AD
-	DMATransLen_t transLen;			//TXFR_LEN
-	DMAStride_t stride;			//STRIDE
-	uint32_t nextCB;			//NEXTCONBK
+	uint32_t srcAddr;					//SOURCE_AD
+	uint32_t destAddr;					//DEST_AD
+	DMATransLen_t transLen;				//TXFR_LEN
+	DMAStride_t stride;					//STRIDE
+	uint32_t nextCB;					//NEXTCONBK
 	uint32_t _reserve[2];
 }DMACtrlBlock_t;
 
@@ -165,13 +153,33 @@ public:
 	void debugPrintDMARegs();
 
 	volatile void *getSrcVirtAddr();
+	uint32_t getSrcPhyAddr();
+	volatile DMACtrlBlock_t *getCBVirtAddr();
+	uint32_t getCBPhyAddr();
+	volatile void *AllocateDestMem();
+	volatile void *SetDMADest(uint32_t dest_phy_addr, int32_t len);
+	uint32_t getDestPhyAddr();
 
-	void dma_test();
+	void dma_demo();
+
+	friend class WS2812BCtrl;
+
+	enum
+	{
+		NO_USE	= 0,
+		DSI		= 1,
+		PCM_TX	= 2,
+		PCM_RX	= 3,
+		SMI		= 4,
+		PWM		= 5
+	};
 private:
+	static const uint32_t DMA_BASE_ADDR = PERIPHERAL_PHY_BASE + DMA_OFFSET;
 	static const uint32_t NO_NEXT_CB = 0x00000000;	//When nextCB is set to it, DMA controller won't load further CBs, and stop the DMA after current transfer
 	static int32_t mem_fd;
 	static uint32_t channel_in_use;
 	static volatile DMAReg_t *dma_regs;
+	static int32_t dma_instances;
 
 	int32_t m_ch;
 	volatile void *m_src_virtual;
@@ -181,4 +189,3 @@ private:
 	volatile void *m_cb_virtual;
 	volatile void *m_cb_physical;
 };
-#endif /* DMA_H_ */

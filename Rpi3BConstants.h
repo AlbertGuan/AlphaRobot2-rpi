@@ -12,9 +12,17 @@
 
 #define PERIPHERAL_PHY_BASE			0x3F000000
 
+//PWM Related Address
 #define GPIO_CLOCK_OFFSET			0x00101000
 #define GPIO_BASE_OFFSET			0x00200000
 #define GPIO_PWM_OFFSET				0x0020C000
+
+//DMA Related Address
+// RPI2 and 3 use a different chipset, and the peripheral addresses have changed.
+#define DMA_OFFSET					0x00007000
+
+#define GPIO_BASE_BUS				0x7E200000 //this is the physical bus address of the GPIO module. This is only used when other peripherals directly connected to the bus (like DMA) need to read/write the GPIOs
+#define PWM_BASE_BUS				0x7E20C000
 
 // BCM Magic
 #define	BCM_PASSWORD				0x5A000000

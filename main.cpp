@@ -16,9 +16,9 @@
 #include <wiringPi.h>
 
 #include "CameraMotors.h"
-#include "RGBControl.h"
 #include "DMA.h"
 #include "PWM.h"
+#include "WS2812BCtrl.h"
 
 
 void gpio_17_18_led_ctrl()
@@ -60,10 +60,12 @@ int main(int argc, char *argv[])
 
 //	RBGControl();
 
-	dma_main();
+//	dma_main();
 
 //	PWMTest();
 
+	WS2812BCtrl leds(0.3);
+	leds.WaterLight();
 	return 0;
 }
 

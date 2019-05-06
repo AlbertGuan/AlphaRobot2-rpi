@@ -5,10 +5,10 @@
  *      Author: aobog
  */
 
-#ifndef PWM_H_
-#define PWM_H_
+#pragma once
 #include <wiringPi.h>
 #include <stdint.h>
+#include <stddef.h>     /* offsetof */
 #include "AlphaBotTypes.h"
 #include "Rpi3BConstants.h"
 
@@ -127,13 +127,18 @@ class PWMCtrl
 {
 public:
 	PWMCtrl();
-	PWMCtrl(int32_t pin, int32_t mode, int32_t range, int32_t divisor);
+	PWMCtrl(int32_t pin, int32_t range, int32_t divisor);
 	~PWMCtrl();
 
 	void SetMode(uint32_t mode);
+
+	void SetPWMCTL(const pwm_reg_CTL_t&);
+	const volatile pwm_reg_CTL_t& GetPWMCTL();
+
 	void SetRange(uint32_t range);
 	void SetClock(int32_t clk_div);
 	void pwmWrite(uint32_t val);
+	void pwmWriteFIFO(uint32_t *vals, uint32_t len);
 
 	static void PrintAddress();
 	static void PWMAddrInit();
@@ -149,6 +154,8 @@ private:
 	static const uint32_t GPIO_BASE_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_BASE_OFFSET;
 	static const uint32_t GPIO_PWM_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_PWM_OFFSET;
 	static const uint32_t GPIO_CLK_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_CLOCK_OFFSET;
+	static const uint32_t PWM_FIFO_PHY_ADDR		= GPIO_PWM_PHY_ADDR + offsetof(pwm_ctrl_t, FIF1);
+	static const uint32_t PWM_FIFO_BUS_ADDR		= PWM_BASE_BUS + offsetof(pwm_ctrl_t, FIF1);
 	static const uint32_t CM_PERIICTL_OFFSET 	= 0x000000A0;
 	static const uint32_t CM_PERIIDIV_OFFSET 	= 0x000000A4;
 	static const int32_t PWM_CLK_SRC_REQ		= 19200000;		//19.2MHz
@@ -168,4 +175,3 @@ private:
 };
 
 void PWMTest();
-#endif /* PWM_H_ */
