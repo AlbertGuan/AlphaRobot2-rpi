@@ -19,6 +19,7 @@
 #include "DMA.h"
 #include "PWM.h"
 #include "WS2812BCtrl.h"
+#include "MotorCtrl.h"
 
 
 void gpio_17_18_led_ctrl()
@@ -64,8 +65,10 @@ int main(int argc, char *argv[])
 
 //	PWMTest();
 
-	WS2812BCtrl leds(0.3);
-	leds.WaterLight();
+//	WS2812BCtrl leds(0.3);
+//	leds.WaterLight();
+
+	MotorDemo();
 	return 0;
 }
 
