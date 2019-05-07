@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include "Rpi3BConstants.h"
+#include "MemBase.h"
+
 typedef struct
 {
 	uint32_t select[6];
@@ -36,3 +39,21 @@ typedef struct
 	const uint32_t rev_0x7E20_00A0[4];
 	uint32_t test;
 }gpio_reg_t;
+
+class GPIOBase : public MemBase
+{
+public:
+	GPIOBase(uint32_t pin, enum GPIO_FUN_SELECT alt);
+	virtual ~GPIOBase();
+	void SetPinSelection(uint32_t pin, enum GPIO_FUN_SELECT alt);
+protected:
+	static volatile gpio_reg_t *gpio_base;
+	const static uint32_t GPIO_BASE_PHY_ADDR = PERIPHERAL_PHY_BASE + GPIO_BASE_OFFSET;
+
+	static int32_t Init();
+	static void Uninit();
+	static int32_t num_of_gpio_inst;
+
+	uint32_t m_pin;
+	enum GPIO_FUN_SELECT m_sel;
+};

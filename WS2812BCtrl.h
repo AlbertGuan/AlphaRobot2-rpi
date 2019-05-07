@@ -10,8 +10,8 @@
 #include <wiringPi.h>
 #include <stdint.h>
 #include "AlphaBotTypes.h"
+#include "PWMBase.h"
 #include "Rpi3BConstants.h"
-#include "PWM.h"
 
 class PWMCtrl;
 

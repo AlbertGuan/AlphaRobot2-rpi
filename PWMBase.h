@@ -10,8 +10,10 @@
 #include <stdint.h>
 #include <stddef.h>     /* offsetof */
 #include "AlphaBotTypes.h"
+#include "GPIOBase.h"
+#include "MemBase.h"
 #include "Rpi3BConstants.h"
-#include "GPIO.h"
+
 
 //PWM Control register "CTL Register"
 typedef union
@@ -93,8 +95,9 @@ typedef struct
 
 /*
  * OI1: what's the relationship between PWM freq and divisor?
+ * Answer: It depends on the mode
  * */
-class PWMCtrl
+class PWMCtrl : public MemBase
 {
 public:
 	PWMCtrl();
@@ -130,7 +133,6 @@ private:
 	static const uint32_t CM_PERIICTL_OFFSET 	= 0x000000A0;
 	static const uint32_t CM_PERIIDIV_OFFSET 	= 0x000000A4;
 	static const int32_t PWM_CLK_SRC_REQ		= 19200000;		//19.2MHz
-	static int32_t mem_fd;
 
 	static volatile gpio_reg_t *gpio_base;
 	static volatile pwm_ctrl_t *pwm_base;

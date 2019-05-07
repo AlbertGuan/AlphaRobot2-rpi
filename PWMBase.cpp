@@ -13,10 +13,8 @@
 #include <fcntl.h>
 #include <bitset>
 
-#include "PWM.h"
+#include "PWMBase.h"
 #include "utilities.h"
-
-int32_t PWMCtrl::mem_fd = -1;
 
 volatile gpio_reg_t *PWMCtrl::gpio_base = NULL;
 volatile pwm_ctrl_t *PWMCtrl::pwm_base = NULL;
@@ -32,13 +30,6 @@ void PWMCtrl::PWMAddrInit()
 	using namespace std;
 	if (mem_fd != 0)
 	{
-		if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC)) < 0)
-		{
-			//Error Handler
-			std::cout << "PWMCtrl Constructor: Failed to open /dev/mem" << std::endl;
-			return;
-		}
-
 		if (MAP_FAILED == (gpio_base = (gpio_reg_t *) mmap(NULL, sizeof(gpio_reg_t), PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, GPIO_BASE_PHY_ADDR)))
 		{
 			//Error Handler
@@ -195,9 +186,6 @@ PWMCtrl::~PWMCtrl()
 		clk_base = NULL;
 		CM_PERIICTL = NULL;
 		CM_PERIIDIV = NULL;
-
-		close(mem_fd);
-		mem_fd = -1;
 	}
 
 }
