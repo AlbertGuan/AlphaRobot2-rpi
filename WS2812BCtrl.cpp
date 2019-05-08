@@ -60,7 +60,7 @@ void WS2812BCtrl::Init()
 	//Clear the FIFO
 	pwm_ctl.CLRF1 = 1;
 
-	m_pwm->SetPWMCTL(pwm_ctl);
+	m_pwm->SetPWMCtrl(pwm_ctl);
 	usleep(200);
 }
 
@@ -103,6 +103,7 @@ void WS2812BCtrl::setSerializedRGB(uint32_t *arr, const int led_idx, const LEDPi
 		}
 	}
 }
+
 void WS2812BCtrl::WaterLight()
 {
 	const uint32_t led_val = 255 * m_brightness;
@@ -133,13 +134,13 @@ void WS2812BCtrl::WaterLight()
 		pwm_reg_CTL_t pwm_ctl;
 		pwm_ctl.word = m_pwm->GetPWMCTL().word;
 		pwm_ctl.PWEN1 = 1;
-		m_pwm->SetPWMCTL(pwm_ctl);
+		m_pwm->SetPWMCtrl(pwm_ctl);
 		usleep(1000);
 
 		pwm_ctl.word = m_pwm->GetPWMCTL().word;
 		pwm_ctl.PWEN1 = 0;
 		pwm_ctl.CLRF1 = 1;
-		m_pwm->SetPWMCTL(pwm_ctl);
+		m_pwm->SetPWMCtrl(pwm_ctl);
 		sleep(1);
 	}
 }

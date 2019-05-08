@@ -43,9 +43,10 @@ typedef struct
 class GPIOBase : public MemBase
 {
 public:
-	GPIOBase(uint32_t pin, enum GPIO_FUN_SELECT alt);
+	GPIOBase(int32_t pin, enum GPIO_FUN_SELECT pin_sel = FSEL_INPUT);
 	virtual ~GPIOBase();
-	void SetPinSelection(uint32_t pin, enum GPIO_FUN_SELECT alt);
+//	virtual void DumpRegisters();
+	void SetPinSelection();
 protected:
 	static volatile gpio_reg_t *gpio_base;
 	const static uint32_t GPIO_BASE_PHY_ADDR = PERIPHERAL_PHY_BASE + GPIO_BASE_OFFSET;
@@ -54,6 +55,6 @@ protected:
 	static void Uninit();
 	static int32_t num_of_gpio_inst;
 
-	uint32_t m_pin;
-	enum GPIO_FUN_SELECT m_sel;
+	int32_t m_pin;
+	enum GPIO_FUN_SELECT m_pin_sel;
 };

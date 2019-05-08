@@ -95,28 +95,37 @@ typedef struct
 
 /*
  * OI1: what's the relationship between PWM freq and divisor?
- * Answer: It depends on the mode
+ * Answer: It depends on the mode MODE1/2 of CTL register
+ * 		   1. PWM Mode: the PWM freq = 19.2MHz / divisor / RNG, e.g. To control the SG90 servo motor, which requires 50Hz,
+ * 		      we pick divisor = 1024 (Note the divisor cannot be larger than 4095), and range 375, the PWM freq = 19.2MHz / 1024 / 375 = 50Hz
+ * 		   2. Serializer Mode: The PWM controller reads one bit from the PWM data/fifo every (divisor/19.2)ns and put it on the output pin.
  * */
-class PWMCtrl : public MemBase
+class PWMCtrl : public GPIOBase
 {
 public:
-	PWMCtrl();
-	PWMCtrl(int32_t pin, int32_t range, int32_t divisor);
+	PWMCtrl(int32_t pin, int32_t range, int32_t divisor, int32_t mode, int32_t fifo);
 	~PWMCtrl();
+
+	void PWMOnOff(int32_t val);
 
 	void SetMode(uint32_t mode);
 
-	void SetPWMCTL(const pwm_reg_CTL_t&);
+	void SetPWMCtrl(const pwm_reg_CTL_t&);
 	const volatile pwm_reg_CTL_t& GetPWMCTL();
 
+	void SetPWMCtrl(int32_t mode, int32_t fifo);
 	void SetRange(uint32_t range);
 	void SetClock(int32_t clk_div);
 	void pwmWrite(uint32_t val);
 	void pwmWriteFIFO(uint32_t *vals, uint32_t len);
+	void getChannel();
+	void ClearFIFO();
 
 	static void PrintAddress();
-	static void PWMAddrInit();
-	static void DumpRegisters();
+	static void Init();
+	static void Uninit();
+//	virtual void DumpRegisters();
+	static PinSel_t getPinSel(uint32_t pin);
 
 	typedef enum
 	{
@@ -125,21 +134,19 @@ public:
 	}PWMTypes;
 
 private:
-	static const uint32_t GPIO_BASE_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_BASE_OFFSET;
 	static const uint32_t GPIO_PWM_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_PWM_OFFSET;
 	static const uint32_t GPIO_CLK_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_CLOCK_OFFSET;
 	static const uint32_t PWM_FIFO_PHY_ADDR		= GPIO_PWM_PHY_ADDR + offsetof(pwm_ctrl_t, FIF1);
 	static const uint32_t PWM_FIFO_BUS_ADDR		= PWM_BASE_BUS + offsetof(pwm_ctrl_t, FIF1);
 	static const uint32_t CM_PERIICTL_OFFSET 	= 0x000000A0;
 	static const uint32_t CM_PERIIDIV_OFFSET 	= 0x000000A4;
-	static const int32_t PWM_CLK_SRC_REQ		= 19200000;		//19.2MHz
 
-	static volatile gpio_reg_t *gpio_base;
 	static volatile pwm_ctrl_t *pwm_base;
 	static volatile uint32_t *clk_base;
 	static volatile uint32_t *CM_PERIICTL;
 	static volatile uint32_t *CM_PERIIDIV;
 
+	static int32_t num_of_pwm_inst;
 	static int32_t pwm_1_in_use;
 	static int32_t pwm_2_in_use;
 

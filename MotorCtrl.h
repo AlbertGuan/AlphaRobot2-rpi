@@ -18,7 +18,7 @@ class MotorCtrl
 {
 public:
 	MotorCtrl();
-	virtual ~MotorCtrl() {}
+	virtual ~MotorCtrl();
 
 	void ShortBrake();
 	void CCW();

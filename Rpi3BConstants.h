@@ -27,7 +27,10 @@
 // BCM Magic
 #define	BCM_PASSWORD				0x5A000000
 
-enum GPIO_FUN_SELECT
+
+
+#define PWM_CLK_SRC_REQ				19200000ull
+typedef enum GPIO_FUN_SELECT
 {
 	FSEL_INPUT	= 0b0000,
 	FSEL_OUTPUT	= 0b0001,
@@ -37,5 +40,11 @@ enum GPIO_FUN_SELECT
 	FSEL_ALT_3	= 0b0111,
 	FSEL_ALT_4	= 0b0011,
 	FSEL_ALT_5	= 0b0010,
+}PinSel_t;
+
+enum ONOFF
+{
+	OFF = 0,
+	ON = 1,
 };
 #endif /* RPI3BCONSTANTS_H_ */

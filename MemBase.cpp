@@ -20,38 +20,40 @@ int32_t MemBase::num_of_mem_inst = 0;
 
 MemBase::MemBase()
 {
-	if (0 == num_of_mem_inst)
-		Init();
+	Init();
 	++num_of_mem_inst;
 }
 
 MemBase::~MemBase()
 {
 	--num_of_mem_inst;
-	if (0 == num_of_mem_inst)
-		Uninit();
+
+	Uninit();
 }
 
 int32_t MemBase::Init()
 {
-	//Check whether the "/dev/mem" has been opened or not
-	if (mem_fd != 0)
+	if (0 == num_of_mem_inst)
 	{
-		try
+		//Check whether the "/dev/mem" has been opened or not
+		if (mem_fd != 0)
 		{
-			mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
-			if (mem_fd < 0)
-				throw "Failed to open /dev/mem";
-		}
-		catch (const std::string &err)
-		{
-			std::cout << __func__ << " with exception: " << err << std::endl;
-			return -1;
-		}
-		catch (...)
-		{
-			std::cout << __func__ << " with unknown exception" << std::endl;
-			return -2;
+			try
+			{
+				mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
+				if (mem_fd < 0)
+					throw "Failed to open /dev/mem";
+			}
+			catch (const std::string &err)
+			{
+				std::cout << __func__ << " with exception: " << err << std::endl;
+				return -1;
+			}
+			catch (...)
+			{
+				std::cout << __func__ << " with unknown exception" << std::endl;
+				return -2;
+			}
 		}
 	}
 	return 0;
@@ -59,6 +61,9 @@ int32_t MemBase::Init()
 
 void MemBase::Uninit()
 {
-	close(mem_fd);
-	mem_fd = -1;
+	if (0 == num_of_mem_inst)
+	{
+		close(mem_fd);
+		mem_fd = -1;
+	}
 }
