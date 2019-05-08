@@ -153,5 +153,3 @@ private:
 	uint32_t m_pwm_channel;
 	uint32_t m_range;
 };
-
-void PWMTest();

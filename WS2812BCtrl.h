@@ -42,7 +42,6 @@ public:
 	WS2812BCtrl(float brightness);
 	~WS2812BCtrl();
 
-	void Init();
 	void WaterLight();
 	void setSerializedRGB(uint32_t *arr, const int led_idx, const LEDPixel_t &color);
 
@@ -50,6 +49,8 @@ private:
 	static const uint32_t BITS_PER_COLOR = 8;
 	static const uint32_t WS2812B_PWM_RANGE = 32;
 	static const uint32_t WS2812B_PWM_DIVIDOR = 8;		//19.2MHz / 8 = 2.4MHz
+	static const uint32_t WS2812B_PWM_MODE = 1;			//Seriliser mode
+	static const uint32_t WS2812B_PWM_FIFO = 1;			//Using FIFO
 	float m_brightness;
 
 	PWMCtrl *m_pwm;

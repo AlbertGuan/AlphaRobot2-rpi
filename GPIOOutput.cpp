@@ -20,9 +20,9 @@ void GPIOOutput::Update(const std::vector<uint32_t> &set_pins, const std::vector
 	uint32_t set[2] = {0, 0};
 	uint32_t clear[2] = {0, 0};
 	for (auto pin : set_pins)
-		set[pin >> 5] |= 0x1u << (pin >> 5 << 5);
+		set[pin >> 5] |= 0x1u << (pin - (pin >> 5 << 5));
 	for (auto pin : clear_pins)
-		clear[pin >> 5] |= 0x1u << (pin >> 5 << 5);
+		clear[pin >> 5] |= 0x1u << (pin - (pin >> 5 << 5));
 
 	for (int i = 0; i < 2; ++i)
 	{

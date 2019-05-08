@@ -268,9 +268,9 @@ void PWMCtrl::PWMOnOff(int32_t val)
 {
 	assert(pwm_base != NULL);
 	if (1 == m_pwm_channel)
-		pwm_base->CTL.MSEN1 = val;
+		pwm_base->CTL.PWEN1 = val;
 	else if (2 == m_pwm_channel)
-		pwm_base->CTL.MSEN2 = val;
+		pwm_base->CTL.PWEN2 = val;
 	else
 		assert(false);
 }
@@ -374,47 +374,5 @@ void PWMCtrl::SetPWMCtrl(int32_t mode, int32_t fifo)
 void PWMCtrl::ClearFIFO()
 {
 	pwm_base->CTL.CLRF1 = 1;
-}
-
-void PWMTest()
-{
-	//Note: In serializer mode, set the range to 32 since every word is only 32bits, or there will be gaps between FIFO words
-	PWMCtrl pwm(18, 32, 8, 1, 1);
-	pwm.ClearFIFO();
-
-	uint32_t vals[10];
-
-	float brightness = 1;
-	const uint32_t led_val = 60;
-	LEDPixel_t leds[4] = {
-			{led_val, 0 ,0},
-			{0, led_val, 0},
-			{0, 0, led_val},
-			{led_val, led_val, led_val}
-	};
-
-	for (int i = 0; i < 10; ++i)
-		vals[i] = 0;
-	setSerializedRGB(vals, 0, { 0, 0, 0 }, brightness);
-	setSerializedRGB(vals, 1, { 0, 0, 0 }, brightness);
-	setSerializedRGB(vals, 2, { 0, 0, 0 }, brightness);
-	setSerializedRGB(vals, 3, { 0, 0, 0 }, brightness);
-
-	int idx = 0;
-	while (1)
-	{
-		++idx;
-		setSerializedRGB(vals, 0, leds[idx % 4], brightness);
-		setSerializedRGB(vals, 1, leds[(idx + 1) % 4], brightness);
-		setSerializedRGB(vals, 2, leds[(idx + 2) % 4], brightness);
-		setSerializedRGB(vals, 3, leds[(idx + 3) % 4], brightness);
-		pwm.pwmWriteFIFO(vals, 9);
-		pwm.PWMOnOff(ON);
-		usleep(1000);
-
-		pwm.PWMOnOff(OFF);
-		pwm.ClearFIFO();
-		sleep(1);
-	}
 }
 

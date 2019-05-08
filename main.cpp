@@ -35,10 +35,10 @@ int main(int argc, char *argv[])
 
 //	PWMTest();
 
-//	WS2812BCtrl leds(0.3);
-//	leds.WaterLight();
+	WS2812BCtrl leds(0.3);
+	leds.WaterLight();
 
-	MotorDemo();
+//	MotorDemo();
 	return 0;
 }
 

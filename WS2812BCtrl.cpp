@@ -24,7 +24,7 @@
 
 WS2812BCtrl::WS2812BCtrl(float brightness)
 {
-	m_pwm = new PWMCtrl(18, WS2812B_PWM_RANGE, WS2812B_PWM_DIVIDOR);
+	m_pwm = new PWMCtrl(18, WS2812B_PWM_RANGE, WS2812B_PWM_DIVIDOR, WS2812B_PWM_MODE, WS2812B_PWM_FIFO);
 	if (brightness > 1.0)
 		m_brightness = 1;
 	else if (brightness < 0.0)
@@ -35,7 +35,8 @@ WS2812BCtrl::WS2812BCtrl(float brightness)
 
 WS2812BCtrl::~WS2812BCtrl()
 {
-
+	delete m_pwm;
+	m_pwm = NULL;
 }
 
 typedef struct
@@ -44,25 +45,6 @@ typedef struct
 	uint32_t G;
 	uint32_t B;
 }RGB_t;
-
-void WS2812BCtrl::Init()
-{
-	//Start Init PWM
-	pwm_reg_CTL_t pwm_ctl;
-	pwm_ctl.word = m_pwm->GetPWMCTL().word & 0xFFFFFF00;
-
-	//Enable the PWM channel 1
-	pwm_ctl.PWEN1 = 0;
-	//Set to serialiser mode
-	pwm_ctl.MODE1 = 1;
-	//Use the FIFO
-	pwm_ctl.USEF1 = 1;
-	//Clear the FIFO
-	pwm_ctl.CLRF1 = 1;
-
-	m_pwm->SetPWMCtrl(pwm_ctl);
-	usleep(200);
-}
 
 //Each led requires 24 pixels, each pixel contains 3 bits in "arr"(0b110 for "1" and 0b100 for "0")
 void WS2812BCtrl::setSerializedRGB(uint32_t *arr, const int led_idx, const LEDPixel_t &color)
@@ -131,16 +113,11 @@ void WS2812BCtrl::WaterLight()
 		setSerializedRGB(vals, 2, leds[(idx + 2) % 4]);
 		setSerializedRGB(vals, 3, leds[(idx + 3) % 4]);
 		m_pwm->pwmWriteFIFO(vals, 9);
-		pwm_reg_CTL_t pwm_ctl;
-		pwm_ctl.word = m_pwm->GetPWMCTL().word;
-		pwm_ctl.PWEN1 = 1;
-		m_pwm->SetPWMCtrl(pwm_ctl);
+		m_pwm->PWMOnOff(ON);
 		usleep(1000);
 
-		pwm_ctl.word = m_pwm->GetPWMCTL().word;
-		pwm_ctl.PWEN1 = 0;
-		pwm_ctl.CLRF1 = 1;
-		m_pwm->SetPWMCtrl(pwm_ctl);
+		m_pwm->PWMOnOff(OFF);
+		m_pwm->ClearFIFO();
 		sleep(1);
 	}
 }
