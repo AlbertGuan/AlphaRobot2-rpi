@@ -1,21 +1,21 @@
 /*
- * GPIOOutput.cpp
+ * GpioOut.cpp
  *
  *  Created on: May 7, 2019
  *      Author: aguan
  */
-#include "GPIOOutput.h"
+#include "GpioOut.h"
 
-GPIOOutput::GPIOOutput(uint32_t pin)
-	: GPIOBase(pin, FSEL_OUTPUT)
+GpioOut::GpioOut(int32_t pin)
+	: GpioBase({pin}, FSEL_OUTPUT)
 {
 }
 
-GPIOOutput::~GPIOOutput()
+GpioOut::~GpioOut()
 {
 }
 
-void GPIOOutput::Update(const std::vector<uint32_t> &set_pins, const std::vector<uint32_t> &clear_pins)
+void GpioOut::Update(const std::vector<uint32_t> &set_pins, const std::vector<uint32_t> &clear_pins)
 {
 	uint32_t set[2] = {0, 0};
 	uint32_t clear[2] = {0, 0};

@@ -8,6 +8,8 @@
 #pragma once
 #include "Rpi3BConstants.h"
 #include "WS2812BCtrl.h"
+#include "MemBase.h"
+
 /*
  * processor documentation for RPI1 at: http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
  * pg 38 for DMA
@@ -138,7 +140,7 @@ typedef struct
 	uint32_t enable;
 }DMAReg_t;
 
-class DMACtrl
+class DMACtrl : public MemBase
 {
 public:
 	DMACtrl(int32_t channel_num, uint32_t src_len);
@@ -176,7 +178,6 @@ public:
 private:
 	static const uint32_t DMA_BASE_ADDR = PERIPHERAL_PHY_BASE + DMA_OFFSET;
 	static const uint32_t NO_NEXT_CB = 0x00000000;	//When nextCB is set to it, DMA controller won't load further CBs, and stop the DMA after current transfer
-	static int32_t mem_fd;
 	static uint32_t channel_in_use;
 	static volatile DMAReg_t *dma_regs;
 	static int32_t dma_instances;

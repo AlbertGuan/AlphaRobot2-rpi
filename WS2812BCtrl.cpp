@@ -14,6 +14,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <string.h>
+#include <assert.h>
 
 
 #define WS2812B_WIDTH		40
@@ -24,13 +25,10 @@
 
 WS2812BCtrl::WS2812BCtrl(float brightness)
 {
-	m_pwm = new PWMCtrl(18, WS2812B_PWM_RANGE, WS2812B_PWM_DIVIDOR, WS2812B_PWM_MODE, WS2812B_PWM_FIFO);
-	if (brightness > 1.0)
-		m_brightness = 1;
-	else if (brightness < 0.0)
-		m_brightness = 0.0;
-	else
-		m_brightness = brightness;
+	m_pwm = new GpioPwm(18, WS2812B_PWM_RANGE, WS2812B_PWM_DIVIDOR, WS2812B_PWM_MODE, WS2812B_PWM_FIFO);
+
+	//Init the brightness
+	SetBrightness(brightness);
 }
 
 WS2812BCtrl::~WS2812BCtrl()
@@ -39,12 +37,11 @@ WS2812BCtrl::~WS2812BCtrl()
 	m_pwm = NULL;
 }
 
-typedef struct
+void WS2812BCtrl::SetBrightness(float brightness)
 {
-	uint32_t R;
-	uint32_t G;
-	uint32_t B;
-}RGB_t;
+	assert(brightness < 1.0 && brightness > 0.0);
+	m_brightness = brightness;
+}
 
 //Each led requires 24 pixels, each pixel contains 3 bits in "arr"(0b110 for "1" and 0b100 for "0")
 void WS2812BCtrl::setSerializedRGB(uint32_t *arr, const int led_idx, const LEDPixel_t &color)

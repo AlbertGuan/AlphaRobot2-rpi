@@ -10,10 +10,10 @@
 #include <wiringPi.h>
 #include <stdint.h>
 #include "AlphaBotTypes.h"
-#include "PWMBase.h"
+#include "GpioPwm.h"
 #include "Rpi3BConstants.h"
 
-class PWMCtrl;
+class GpioPwm;
 
 typedef struct
 {
@@ -39,9 +39,10 @@ typedef struct
 class WS2812BCtrl
 {
 public:
-	WS2812BCtrl(float brightness);
+	WS2812BCtrl(float brightness = 0.3);
 	~WS2812BCtrl();
 
+	void SetBrightness(float brightness);
 	void WaterLight();
 	void setSerializedRGB(uint32_t *arr, const int led_idx, const LEDPixel_t &color);
 
@@ -53,6 +54,6 @@ private:
 	static const uint32_t WS2812B_PWM_FIFO = 1;			//Using FIFO
 	float m_brightness;
 
-	PWMCtrl *m_pwm;
+	GpioPwm *m_pwm;
 };
 

@@ -9,7 +9,6 @@
 
 #include "DMA.h" // for DMA addresses, etc.
 
-int32_t DMACtrl::mem_fd = -1;
 uint32_t DMACtrl::channel_in_use = 0;
 volatile DMAReg_t *DMACtrl::dma_regs = NULL;
 int32_t DMACtrl::dma_instances = 0;
@@ -59,9 +58,6 @@ DMACtrl::~DMACtrl()
 	{
 		munmap((void *)dma_regs, sizeof(DMAReg_t));
 		dma_regs = NULL;
-
-		close(mem_fd);
-		mem_fd = -1;
 	}
 }
 
@@ -100,21 +96,12 @@ volatile void *DMACtrl::SetDMADest(uint32_t dest_phy_addr, int32_t len)
 
 int32_t DMACtrl::GeneralInit(int32_t channel_num)
 {
-	if (mem_fd < 0)
-	{
-		mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-		if (mem_fd < 0)
-		{
-			std::cout << "Failed to open /dev/mem (did you remember to run as root?)\n";
-			exit(1);
-		}
 
-		dma_regs = (volatile DMAReg_t *)mmap(NULL, sizeof(DMAReg_t), PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, DMA_BASE_ADDR);
-		if (dma_regs == MAP_FAILED)
-		{
-			std::cout << "Failed to map dma_regs!" << std::endl;
-			exit(2);
-		}
+	dma_regs = (volatile DMAReg_t *)mmap(NULL, sizeof(DMAReg_t), PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, DMA_BASE_ADDR);
+	if (dma_regs == MAP_FAILED)
+	{
+		std::cout << "Failed to map dma_regs!" << std::endl;
+		exit(2);
 	}
 
 	if (channel_in_use & (0x1 << channel_num))

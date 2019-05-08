@@ -13,14 +13,14 @@
 #include <fcntl.h>
 #include <bitset>
 #include <string>
+#include "GpioBase.h"
 
-#include "GPIOBase.h"
 
 
-volatile gpio_reg_t *GPIOBase::gpio_base = NULL;
-int32_t GPIOBase::num_of_gpio_inst = 0;
+volatile gpio_reg_t *GpioBase::gpio_base = NULL;
+int32_t GpioBase::num_of_gpio_inst = 0;
 
-GPIOBase::GPIOBase(int32_t pin, PinSel_t pin_sel)
+GpioBase::GpioBase(const std::vector<int32_t> &pin, PinSel_t pin_sel)
 	: m_pin(pin),
 	  m_pin_sel(pin_sel)
 {
@@ -30,27 +30,30 @@ GPIOBase::GPIOBase(int32_t pin, PinSel_t pin_sel)
 	++num_of_gpio_inst;
 }
 
-GPIOBase::~GPIOBase()
+GpioBase::~GpioBase()
 {
 	--num_of_gpio_inst;
 		Uninit();
 }
 
-void GPIOBase::SetPinSelection()
+void GpioBase::SetPinSelection()
 {
-	uint32_t word_off = m_pin / 10;		//Each GPIO selection word contains 10 pins
-	uint32_t bit_off = m_pin % 10 * 3;	//Each pin takes 3 bits in GPIO selection word
-	printf("Pin %u: word_off: %u, bit_off: %u\n", m_pin, word_off, bit_off);
-	uint32_t before = gpio_base->select[word_off];
-	std::bitset<32> b(before);
-	gpio_base->select[word_off] &= ~(0x7 << bit_off);
-	gpio_base->select[word_off] |= m_pin_sel << bit_off;
-	std::bitset<32> a(gpio_base->select[word_off]);
-	std::cout << "Before: " << b << std::endl;
-	std::cout << "After:  " << a << std::endl;
+	for (auto pin : m_pin)
+	{
+		uint32_t word_off = pin / 10;		//Each GPIO selection word contains 10 pins
+		uint32_t bit_off = pin % 10 * 3;	//Each pin takes 3 bits in GPIO selection word
+		printf("Pin %u: word_off: %u, bit_off: %u\n", pin, word_off, bit_off);
+		uint32_t before = gpio_base->select[word_off];
+		std::bitset<32> b(before);
+		gpio_base->select[word_off] &= ~(0x7 << bit_off);
+		gpio_base->select[word_off] |= m_pin_sel << bit_off;
+		std::bitset<32> a(gpio_base->select[word_off]);
+		std::cout << "Before: " << b << std::endl;
+		std::cout << "After:  " << a << std::endl;
+	}
 }
 
-int32_t GPIOBase::Init()
+int32_t GpioBase::Init()
 {
 	if (0 == num_of_gpio_inst)
 	{
@@ -78,7 +81,7 @@ int32_t GPIOBase::Init()
 	return 0;
 }
 
-void GPIOBase::Uninit()
+void GpioBase::Uninit()
 {
 	if (0 == num_of_gpio_inst)
 	{

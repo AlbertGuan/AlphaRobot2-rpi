@@ -17,14 +17,14 @@
 
 MotorCtrl::MotorCtrl()
 {
-	m_pins.push_back(new GPIOOutput(GPIO_AIN1));
-	m_pins.push_back(new GPIOOutput(GPIO_AIN2));
-	m_pins.push_back(new GPIOOutput(GPIO_PWMA));
-	m_pins.push_back(new GPIOOutput(GPIO_BIN1));
-	m_pins.push_back(new GPIOOutput(GPIO_BIN2));
-	m_pins.push_back(new GPIOOutput(GPIO_PWMB));
+	m_pins.push_back(new GpioOut(GPIO_AIN1));
+	m_pins.push_back(new GpioOut(GPIO_AIN2));
+	m_pins.push_back(new GpioOut(GPIO_PWMA));
+	m_pins.push_back(new GpioOut(GPIO_BIN1));
+	m_pins.push_back(new GpioOut(GPIO_BIN2));
+	m_pins.push_back(new GpioOut(GPIO_PWMB));
 
-	GPIOOutput::Update(std::vector<uint32_t>{GPIO_PWMA, GPIO_PWMB}, std::vector<uint32_t>{GPIO_AIN1, GPIO_AIN2, GPIO_BIN1, GPIO_BIN2});
+	GpioOut::Update(std::vector<uint32_t>{GPIO_PWMA, GPIO_PWMB}, std::vector<uint32_t>{GPIO_AIN1, GPIO_AIN2, GPIO_BIN1, GPIO_BIN2});
 }
 
 MotorCtrl::~MotorCtrl()
@@ -39,7 +39,7 @@ void MotorCtrl::ShortBrake()
 	//Short Brake:
 	//IN1: High
 	//IN2: High
-	GPIOOutput::Update(std::vector<uint32_t> {GPIO_AIN1, GPIO_AIN2, GPIO_BIN1, GPIO_BIN2}, std::vector<uint32_t> {});
+	GpioOut::Update(std::vector<uint32_t> {GPIO_AIN1, GPIO_AIN2, GPIO_BIN1, GPIO_BIN2}, std::vector<uint32_t> {});
 }
 
 void MotorCtrl::CCW()
@@ -47,7 +47,7 @@ void MotorCtrl::CCW()
 	//CCW:
 	//IN1: Low
 	//IN2: High
-	GPIOOutput::Update(std::vector<uint32_t> {GPIO_AIN2, GPIO_BIN2}, std::vector<uint32_t> {GPIO_AIN1, GPIO_BIN1});
+	GpioOut::Update(std::vector<uint32_t> {GPIO_AIN2, GPIO_BIN2}, std::vector<uint32_t> {GPIO_AIN1, GPIO_BIN1});
 	printf("Counter clock-wise: AIN1 Low, AIN2 high, BIN1 Low, BIN2 high\n");
 }
 
@@ -56,7 +56,7 @@ void MotorCtrl::CW()
 	//CW:
 	//IN1: High
 	//IN2: Low
-	GPIOOutput::Update(std::vector<uint32_t> {GPIO_AIN1, GPIO_BIN1}, std::vector<uint32_t> {GPIO_AIN2, GPIO_BIN2});
+	GpioOut::Update(std::vector<uint32_t> {GPIO_AIN1, GPIO_BIN1}, std::vector<uint32_t> {GPIO_AIN2, GPIO_BIN2});
 	printf("Clock-wise: AIN1 high, AIN2 Low, BIN1 high, BIN2 Low\n");
 }
 
@@ -65,7 +65,7 @@ void MotorCtrl::Stop()
 	//Stop:
 	//IN1: Low
 	//IN2: Low
-	GPIOOutput::Update(std::vector<uint32_t> {}, std::vector<uint32_t> {GPIO_AIN1, GPIO_AIN2, GPIO_BIN1, GPIO_BIN2});
+	GpioOut::Update(std::vector<uint32_t> {}, std::vector<uint32_t> {GPIO_AIN1, GPIO_AIN2, GPIO_BIN1, GPIO_BIN2});
 	printf("Stop Motor: AIN1 Low, AIN2 Low, BIN1 Low, BIN2 Low\n");
 }
 

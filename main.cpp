@@ -17,7 +17,7 @@
 
 #include "CameraMotors.h"
 #include "DMA.h"
-#include "PWMBase.h"
+#include "GpioPwm.h"
 #include "WS2812BCtrl.h"
 #include "MotorCtrl.h"
 

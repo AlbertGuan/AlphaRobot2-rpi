@@ -15,19 +15,19 @@
 #include <assert.h>
 #include <exception>
 
-#include "PWMBase.h"
+#include "GpioPwm.h"
 #include "utilities.h"
 
-volatile pwm_ctrl_t *PWMCtrl::pwm_base = NULL;
-volatile uint32_t *PWMCtrl::clk_base = NULL;
-volatile uint32_t *PWMCtrl::CM_PERIICTL = NULL;
-volatile uint32_t *PWMCtrl::CM_PERIIDIV = NULL;
+volatile pwm_ctrl_t *GpioPwm::pwm_base = NULL;
+volatile uint32_t *GpioPwm::clk_base = NULL;
+volatile uint32_t *GpioPwm::CM_PERIICTL = NULL;
+volatile uint32_t *GpioPwm::CM_PERIIDIV = NULL;
 
-int32_t PWMCtrl::num_of_pwm_inst = 0;
-int32_t PWMCtrl::pwm_1_in_use = -1;
-int32_t PWMCtrl::pwm_2_in_use = -1;
+int32_t GpioPwm::num_of_pwm_inst = 0;
+int32_t GpioPwm::pwm_1_in_use = -1;
+int32_t GpioPwm::pwm_2_in_use = -1;
 
-PinSel_t PWMCtrl::getPinSel(uint32_t pin)
+PinSel_t GpioPwm::getPinSel(uint32_t pin)
 {
 	if (12 == pin)
 		return FSEL_ALT_0;
@@ -49,7 +49,47 @@ PinSel_t PWMCtrl::getPinSel(uint32_t pin)
 	return FSEL_INPUT;
 }
 
-void PWMCtrl::Init()
+void GpioPwm::getChannel()
+{
+	try
+	{
+		if (12 == m_pin[0]
+			|| 18 == m_pin[0]
+			|| 40 == m_pin[0]
+			|| 52 == m_pin[0])
+		{
+			if (pwm_1_in_use == -1)
+			{
+				m_pwm_channel = 1;
+				pwm_1_in_use = m_pin[0];
+			}
+			else if (pwm_1_in_use != m_pin[0])
+				throw "Failed to init pin " + std::to_string(m_pin[0]) + " occupied by " + std::to_string(pwm_1_in_use);
+		}
+		else if (13 == m_pin[0]
+				|| 19 == m_pin[0]
+				|| 41 == m_pin[0]
+				|| 45 == m_pin[0]
+				|| 53 == m_pin[0])
+		{
+			if (pwm_2_in_use == -1)
+			{
+				m_pwm_channel = 2;
+				pwm_2_in_use = m_pin[0];
+			}
+			else if (pwm_2_in_use != m_pin[0])
+				throw "Failed to init pin " + std::to_string(m_pin[0]) + " occupied by " + std::to_string(pwm_2_in_use);
+		}
+		else
+			throw "Pin " + std::to_string(m_pin[0]) + " doesn't support PWM";
+	}
+	catch (const std::string &exp)
+	{
+		std::cout << "GpioPwm::getChannel() got exception: " << exp << std::endl;
+	}
+}
+
+void GpioPwm::Init()
 {
 	if (0 == num_of_pwm_inst)
 	{
@@ -68,16 +108,16 @@ void PWMCtrl::Init()
 			}
 
 		}
-		catch (const std::string &str)
+		catch (const std::string &exp)
 		{
-			std::cout << "PWMCtrl Constructor got exception: " << str << std::endl;
+			std::cout << "GpioPwm Constructor got exception: " << exp << std::endl;
 		}
 		CM_PERIICTL = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_PERIICTL_OFFSET));
 		CM_PERIIDIV = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_PERIIDIV_OFFSET));
 	}
 }
 
-void PWMCtrl::Uninit()
+void GpioPwm::Uninit()
 {
 	if (0 == num_of_pwm_inst)
 	{
@@ -97,51 +137,11 @@ void PWMCtrl::Uninit()
 	}
 }
 
-void PWMCtrl::getChannel()
-{
-	try
-	{
-		if (12 == m_pin
-			|| 18 == m_pin
-			|| 40 == m_pin
-			|| 52 == m_pin)
-		{
-			if (pwm_1_in_use == -1)
-			{
-				m_pwm_channel = 1;
-				pwm_1_in_use = m_pin;
-			}
-			else if (pwm_1_in_use != m_pin)
-				throw "Failed to init pin " + std::to_string(m_pin) + " occupied by " + std::to_string(pwm_1_in_use);
-		}
-		else if (13 == m_pin
-				|| 19 == m_pin
-				|| 41 == m_pin
-				|| 45 == m_pin
-				|| 53 == m_pin)
-		{
-			if (pwm_2_in_use == -1)
-			{
-				m_pwm_channel = 2;
-				pwm_2_in_use = m_pin;
-			}
-			else if (pwm_2_in_use != m_pin)
-				throw "Failed to init pin " + std::to_string(m_pin) + " occupied by " + std::to_string(pwm_2_in_use);
-		}
-		else
-			throw "Pin " + std::to_string(m_pin) + " doesn't support PWM";
-	}
-	catch (const std::string &exp)
-	{
-		std::cout << "PWMCtrl::getChannel() got exception: " << exp << std::endl;
-	}
-}
-
-PWMCtrl::PWMCtrl(int32_t pin, int32_t range, int32_t divisor, int32_t mode, int32_t fifo)
-	: GPIOBase(pin, getPinSel(pin))
+GpioPwm::GpioPwm(int32_t pin, int32_t range, int32_t divisor, int32_t mode, int32_t fifo)
+	: GpioBase({pin}, getPinSel(pin))
 {
 	//Step 0: Init pointers to PWM and CLK registers
-	PWMCtrl::Init();
+	GpioPwm::Init();
 
 	//Step 1: Figure out which PWM channel to use
 	getChannel();
@@ -167,7 +167,7 @@ PWMCtrl::PWMCtrl(int32_t pin, int32_t range, int32_t divisor, int32_t mode, int3
 	//Note: The PWM hasn't been enabled yet!!!
 }
 
-PWMCtrl::~PWMCtrl()
+GpioPwm::~GpioPwm()
 {
 	if (1 == m_pwm_channel)
 	{
@@ -189,7 +189,7 @@ PWMCtrl::~PWMCtrl()
  * I'm trying to "reverse-engineering" the wiringPi library along with information I can find
  * through Google.
  */
-void PWMCtrl::SetClock(int32_t clk_div)
+void GpioPwm::SetClock(int32_t clk_div)
 {
 	uint32_t pwm_CTL = pwm_base->CTL.word;
 	clk_div &= 4095;
@@ -210,7 +210,7 @@ void PWMCtrl::SetClock(int32_t clk_div)
 	usleep(1000);
 }
 
-void PWMCtrl::SetMode(uint32_t mode)
+void GpioPwm::SetMode(uint32_t mode)
 {
 	pwm_reg_CTL_t temp;
 	if (1 == m_pwm_channel)
@@ -228,7 +228,7 @@ void PWMCtrl::SetMode(uint32_t mode)
 	usleep(100);
 }
 
-void PWMCtrl::SetRange(uint32_t range)
+void GpioPwm::SetRange(uint32_t range)
 {
 	if (1 == m_pwm_channel)
 		pwm_base->RNG1 = range;
@@ -237,7 +237,7 @@ void PWMCtrl::SetRange(uint32_t range)
 	usleep(100);
 }
 
-void PWMCtrl::pwmWrite(uint32_t val)
+void GpioPwm::pwmWrite(uint32_t val)
 {
 	if (1 == m_pwm_channel)
 		pwm_base->DAT1 = val;
@@ -245,7 +245,7 @@ void PWMCtrl::pwmWrite(uint32_t val)
 		pwm_base->DAT2 = val;
 }
 
-void PWMCtrl::pwmWriteFIFO(uint32_t *vals, uint32_t len)
+void GpioPwm::pwmWriteFIFO(uint32_t *vals, uint32_t len)
 {
 	for (uint32_t i = 0; i < len; ++i)
 	{
@@ -253,18 +253,18 @@ void PWMCtrl::pwmWriteFIFO(uint32_t *vals, uint32_t len)
 	}
 }
 
-void PWMCtrl::SetPWMCtrl(const pwm_reg_CTL_t& ctl)
+void GpioPwm::SetPWMCtrl(const pwm_reg_CTL_t& ctl)
 {
 	pwm_base->CTL.word = ctl.word;
 	usleep(100);
 }
 
-const volatile pwm_reg_CTL_t& PWMCtrl::GetPWMCTL()
+const volatile pwm_reg_CTL_t& GpioPwm::GetPWMCTL()
 {
 	return pwm_base->CTL;
 }
 
-void PWMCtrl::PWMOnOff(int32_t val)
+void GpioPwm::PWMOnOff(int32_t val)
 {
 	assert(pwm_base != NULL);
 	if (1 == m_pwm_channel)
@@ -275,7 +275,7 @@ void PWMCtrl::PWMOnOff(int32_t val)
 		assert(false);
 }
 
-void PWMCtrl::PrintAddress()
+void GpioPwm::PrintAddress()
 {
 	using namespace std;
 	cout << "pwm_base->CTL:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->CTL << endl;
@@ -288,7 +288,7 @@ void PWMCtrl::PrintAddress()
 	cout << "pwm_base->DAT2:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->DAT2 << endl;
 }
 
-//void PWMCtrl::DumpRegisters()
+//void GpioPwm::DumpRegisters()
 //{
 //	using namespace std;
 //	for (int i = 0; i < 6; ++i)
@@ -356,7 +356,7 @@ void setSerializedRGB(uint32_t *arr, const int led_idx, const LEDPixel_t &color,
 	}
 }
 
-void PWMCtrl::SetPWMCtrl(int32_t mode, int32_t fifo)
+void GpioPwm::SetPWMCtrl(int32_t mode, int32_t fifo)
 {
 	pwm_reg_CTL_t pwm_ctl;
 	pwm_ctl.word = GetPWMCTL().word;
@@ -371,7 +371,7 @@ void PWMCtrl::SetPWMCtrl(int32_t mode, int32_t fifo)
 	SetPWMCtrl(pwm_ctl);
 }
 
-void PWMCtrl::ClearFIFO()
+void GpioPwm::ClearFIFO()
 {
 	pwm_base->CTL.CLRF1 = 1;
 }

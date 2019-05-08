@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <stddef.h>     /* offsetof */
 #include "AlphaBotTypes.h"
-#include "GPIOBase.h"
+#include "GpioBase.h"
 #include "MemBase.h"
 #include "Rpi3BConstants.h"
 
@@ -100,11 +100,11 @@ typedef struct
  * 		      we pick divisor = 1024 (Note the divisor cannot be larger than 4095), and range 375, the PWM freq = 19.2MHz / 1024 / 375 = 50Hz
  * 		   2. Serializer Mode: The PWM controller reads one bit from the PWM data/fifo every (divisor/19.2)ns and put it on the output pin.
  * */
-class PWMCtrl : public GPIOBase
+class GpioPwm : public GpioBase
 {
 public:
-	PWMCtrl(int32_t pin, int32_t range, int32_t divisor, int32_t mode, int32_t fifo);
-	~PWMCtrl();
+	GpioPwm(int32_t pin, int32_t range, int32_t divisor, int32_t mode, int32_t fifo);
+	~GpioPwm();
 
 	void PWMOnOff(int32_t val);
 
@@ -137,7 +137,7 @@ private:
 	static const uint32_t GPIO_PWM_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_PWM_OFFSET;
 	static const uint32_t GPIO_CLK_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_CLOCK_OFFSET;
 	static const uint32_t PWM_FIFO_PHY_ADDR		= GPIO_PWM_PHY_ADDR + offsetof(pwm_ctrl_t, FIF1);
-	static const uint32_t PWM_FIFO_BUS_ADDR		= PWM_BASE_BUS + offsetof(pwm_ctrl_t, FIF1);
+	static const uint32_t PWM_FIFO_BUS_ADDR		= PERIPHERAL_BUS_BASE + GPIO_PWM_OFFSET + offsetof(pwm_ctrl_t, FIF1);
 	static const uint32_t CM_PERIICTL_OFFSET 	= 0x000000A0;
 	static const uint32_t CM_PERIIDIV_OFFSET 	= 0x000000A4;
 
@@ -150,6 +150,6 @@ private:
 	static int32_t pwm_1_in_use;
 	static int32_t pwm_2_in_use;
 
-	uint32_t m_pwm_channel;
+	int32_t m_pwm_channel;
 	uint32_t m_range;
 };

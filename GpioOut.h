@@ -7,12 +7,13 @@
 
 #pragma once
 #include <vector>
-#include "GPIOBase.h"
-class GPIOOutput : public GPIOBase
+
+#include "GpioBase.h"
+class GpioOut : public GpioBase
 {
 public:
-	GPIOOutput(uint32_t pin);
-	virtual ~GPIOOutput();
+	GpioOut(int32_t pin);
+	virtual ~GpioOut();
 	static void Update(const std::vector<uint32_t> &set_pins, const std::vector<uint32_t> &clear_pins);
 protected:
 

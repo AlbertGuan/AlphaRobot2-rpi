@@ -6,7 +6,7 @@
  */
 
 #pragma once
-
+#include <vector>
 #include "Rpi3BConstants.h"
 #include "MemBase.h"
 
@@ -40,11 +40,11 @@ typedef struct
 	uint32_t test;
 }gpio_reg_t;
 
-class GPIOBase : public MemBase
+class GpioBase : public MemBase
 {
 public:
-	GPIOBase(int32_t pin, enum GPIO_FUN_SELECT pin_sel = FSEL_INPUT);
-	virtual ~GPIOBase();
+	GpioBase(const std::vector<int32_t> &pin, PinSel_t pin_sel = FSEL_INPUT);
+	virtual ~GpioBase();
 //	virtual void DumpRegisters();
 	void SetPinSelection();
 protected:
@@ -55,6 +55,6 @@ protected:
 	static void Uninit();
 	static int32_t num_of_gpio_inst;
 
-	int32_t m_pin;
+	std::vector<int32_t> m_pin;
 	enum GPIO_FUN_SELECT m_pin_sel;
 };

@@ -9,9 +9,9 @@
 #include <stddef.h>     /* offsetof */
 #include <vector>
 
-#include "GPIOBase.h"
+#include "GpioOut.h"
+#include "GpioBase.h"
 #include "Rpi3BConstants.h"
-#include "GPIOOutput.h"
 
 //Using the TB6612FNG H-bridge to control two motors
 class MotorCtrl
@@ -32,7 +32,7 @@ private:
 	const static uint32_t GPIO_BIN2 = 21;
 	const static uint32_t GPIO_PWMB = 26;
 
-	std::vector<GPIOBase *> m_pins;
+	std::vector<GpioBase *> m_pins;
 };
 
 void MotorDemo();
