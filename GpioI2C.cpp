@@ -20,6 +20,8 @@ const uint32_t GpioI2C::GPIO_I2C_PHY_ADDR[2] = { PERIPHERAL_PHY_BASE + GPIO_I2C0
 int32_t GpioI2C::num_of_i2c_inst = 0;
 int32_t GpioI2C::i2c_0_in_use = -1;
 int32_t GpioI2C::i2c_1_in_use = -1;
+I2CCtrlReg_t GpioI2C::CTRL = { 0 };
+I2CStatusReg_t GpioI2C::STATUS = { 0 };
 
 PinSel_t GpioI2C::getPinSel(int32_t sda, int32_t scl)
 {
@@ -75,64 +77,87 @@ void GpioI2C::getChannel()
 	}
 }
 
-int8_t GpioI2C::read(uint32_t addr, uint32_t reg)
+void GpioI2C::UpdateWriteCtrl()
 {
-	write(addr, reg);
-	I2CCtrlReg_t ctrl;
-	ctrl.word = 0;
-	ctrl.I2CEN = 1;
-	ctrl.ST = 1;
-	ctrl.CLEAR = 1;
-	ctrl.READ = 1;
-	I2CStatusReg_t status;
-	status.word = 0;
-	status.CLKT = 1;
-	status.ERR = 1;
-	status.DONE = 1;
-
-	m_i2c_base->A.ADDR = addr;
-	m_i2c_base->DLEN.DLEN = 1;
-	m_i2c_base->C.word = ctrl.word;
-	m_i2c_base->S.word = status.word;
-	while (0 == m_i2c_base->S.DONE);
-	return m_i2c_base->FIFO.DATA;
+	CTRL.word = 0;
+	CTRL.I2CEN = 1;
+	CTRL.ST = 1;
+	m_i2c_base->C.word = CTRL.word;
 }
 
-int32_t GpioI2C::write(uint32_t addr)
+void GpioI2C::UpdateReadCtrl()
 {
-	I2CCtrlReg_t ctrl;
-	ctrl.I2CEN = 1;
-	ctrl.ST = 1;
-	I2CStatusReg_t status;
-	status.CLKT = 1;
-	status.ERR = 1;
-	status.DONE = 1;
-	m_i2c_base->A.ADDR = addr;
-	m_i2c_base->DLEN.DLEN = 0;
-	m_i2c_base->C.word = ctrl.word;
-	m_i2c_base->S.word = status.word;
-
-	while (0 == m_i2c_base->S.DONE);
-	return 1;
+	CTRL.word = 0;
+	CTRL.I2CEN = 1;
+	CTRL.ST = 1;
+	CTRL.CLEAR = 1;
+	CTRL.READ = 1;
+	m_i2c_base->C.word = CTRL.word;
+}
+void GpioI2C::UpdateStatus()
+{
+	STATUS.word = 0;
+	STATUS.CLKT = 1;
+	STATUS.ERR = 1;
+	STATUS.DONE = 1;
+	m_i2c_base->S.word = STATUS.word;
 }
 
-int32_t GpioI2C::write(uint32_t addr, int8_t val)
+int16_t GpioI2C::read(int8_t addr, int8_t reg, int8_t *vals, const int16_t len)
 {
-	I2CCtrlReg_t ctrl;
-	ctrl.I2CEN = 1;
-	ctrl.ST = 1;
-	I2CStatusReg_t status;
-	status.CLKT = 1;
-	status.ERR = 1;
-	status.DONE = 1;
+	assert(vals != NULL);
+	if (1 == write(addr, reg))
+	{
+		int16_t received = 0;
+		m_i2c_base->A.ADDR = addr;
+		m_i2c_base->DLEN.DLEN = len;
+
+		UpdateReadCtrl();
+		UpdateStatus();
+
+		while (received < len)
+		{
+			while (m_i2c_base->S.RXD && received < len)
+			{
+				vals[received] = m_i2c_base->FIFO.DATA;
+				++received;
+			}
+		}
+		while (0 == m_i2c_base->S.DONE);
+	}
+	return 0;
+}
+
+int16_t GpioI2C::write(int8_t addr)
+{
+	return write(addr, {});
+}
+
+int16_t GpioI2C::write(int8_t addr, int8_t val)
+{
+	return write(addr, {val});
+}
+
+int16_t GpioI2C::write(int8_t addr, const std::vector<int8_t> &vals)
+{
+	int16_t len = vals.size();
+	int16_t sent = 0;
+	UpdateStatus();
+	UpdateWriteCtrl();
 	m_i2c_base->A.ADDR = addr;
-	m_i2c_base->DLEN.DLEN = 1;
-	m_i2c_base->FIFO.DATA = val;
-	m_i2c_base->C.word = ctrl.word;
-	m_i2c_base->S.word = status.word;
+	m_i2c_base->DLEN.DLEN = len;
+	while (sent < len)
+	{
+		while (0 == m_i2c_base->S.TXD && sent < len)
+		{
+			m_i2c_base->FIFO.DATA = vals[sent];
+			++sent;
+		}
+	}
 
 	while (0 == m_i2c_base->S.DONE);
-	return 1;
+
+	return sent;
 }
 
 void GpioI2C::OnOff(int32_t val)
@@ -144,7 +169,6 @@ void GpioI2C::ClearFIFO()
 {
 	m_i2c_base->C.CLEAR = 1;
 }
-
 
 GpioI2C::GpioI2C(int32_t pin_sda, int32_t pin_scl)
 	: GpioBase({pin_sda, pin_scl}, getPinSel(pin_sda, pin_scl))

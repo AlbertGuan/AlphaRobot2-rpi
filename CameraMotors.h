@@ -5,11 +5,30 @@
  *      Author: aobog
  */
 
-#ifndef CAMERAMOTORS_H_
-#define CAMERAMOTORS_H_
+#pragma once
+#ifdef USING_WIRINGPI
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
+#endif
+#include "PCA9685Ctrl.h"
 
+#ifdef USING_WIRINGPI
 void rpiI2CInit();
+#endif
+
 void TwoMotorCtrl();
-#endif /* CAMERAMOTORS_H_ */
+
+class CameraMotor
+{
+public:
+	CameraMotor(int32_t id, float freq, int32_t max, int32_t min, PCA9685Ctrl &controller);
+	~CameraMotor();
+	void SetController(PCA9685Ctrl &controller);
+	void Move(int32_t posn);
+private:
+	int32_t m_id;					//Which channel the motor is connected to on PCA9685
+	float m_freq;
+	int32_t m_max;
+	int32_t m_min;
+	PCA9685Ctrl *m_pwm_controller;
+};

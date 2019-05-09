@@ -127,10 +127,13 @@ public:
 	static PinSel_t getPinSel(int32_t sda, int32_t scl);
 	void getChannel();
 
-	int8_t read(uint32_t addr, uint32_t reg);
-	int32_t write(uint32_t addr);
-	int32_t write(uint32_t addr, int8_t val);
-	//int32_t write(uint32_t addr, std::vector<int8_t> &vals);
+	int16_t read(const int8_t addr, const int8_t reg, int8_t *vals, int16_t len = 1);
+	int16_t write(const int8_t addr);
+	int16_t write(const int8_t addr, int8_t val);
+	int16_t write(const int8_t addr, const std::vector<int8_t> &vals);
+	void UpdateWriteCtrl();
+	void UpdateReadCtrl();
+	void UpdateStatus();
 	void OnOff(int32_t val);
 	void ClearFIFO();
 protected:
@@ -139,6 +142,9 @@ protected:
 	static int32_t num_of_i2c_inst;
 	static int32_t i2c_0_in_use;
 	static int32_t i2c_1_in_use;
+
+	static I2CCtrlReg_t CTRL;
+	static I2CStatusReg_t STATUS;
 private:
 	volatile I2CReg_t *m_i2c_base;
 	int32_t m_i2c_channel;

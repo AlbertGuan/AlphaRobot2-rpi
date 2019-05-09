@@ -15,30 +15,32 @@
 #include <assert.h>
 #include <exception>
 #include "CameraMotors.h"
-#include "GpioI2C.h"
 
+#ifdef USING_WIRINGPI
 /*Based on the datasheet of SG90 motor
  *1. the PWM period is 20ms (50Hz)
  *2. the range of duty cycle is 1-2ms, the range of PCA9685 is 0-4096 which maps to 0-100% duty cycle,
  *   so the range we could use is 204-409 (5-10%)
  */
 #define LEFT_RIGHT_SERVO		0
-#define LEFT_RIGTH_MIN			60
-#define LEFT_RIGTH_RANGE		150
+#define LEFT_RIGHT_MIN			60
+#define LEFT_RIGHT_RANGE		150
 
 #define UP_DOWM_SERVO			1
 #define UP_DOWN_MIN				100
 #define UP_DOWN_RANGE			60
 
-
-#define PCA9685_I2C_ADDRESS		0x40
+//The I2C address PCA9685 is decided by pin A0-A5 (Fig 4 of PCA9685 Datasheet)
+//After checking the AlphaRobot Pi schematic, all of them are connected to ground
+//So the address is 0b1000000 -> 0x40, the leading 1 is fixed
+const int8_t PCA9685_I2C_ADDRESS = 0x40;
 #define SERVO_MOTOR_PWM_FREQ	50
 
 //The osc of PCA9685 is 25MHz
 #define PCA9685_OSC_FREQ		25000000.0f
 //Register addresses of PCA9685
-#define REG_MODE1_ADDR					0x00
-#define REG_MODE2_ADDR					0x01
+const int8_t REG_MODE1_ADDR = 0x00;
+const int8_t REG_MODE2_ADDR = 0x01;
 
 #define REG_LEDx_ON_LOW_ADDR(x)			(0x06 + ((x) << 2))
 #define REG_LEDx_ON_HIGH_ADDR(x)		(0x07 + ((x) << 2))
@@ -102,50 +104,72 @@ void rpiI2CInit()
 	fd = wiringPiI2CSetup(PCA9685_I2C_ADDRESS);
 
 	//Enable the auto-increment of registers
+	//OI: Is the auto-increment of registers necessary?
 	int mode1_val = wiringPiI2CReadReg8(fd, REG_MODE1_ADDR);
 	printf("mode1_val: 0x%08x\n", mode1_val);
-//	wiringPiI2CWriteReg8(fd, REG_MODE1_ADDR, mode1_val | 0x20);
-//
-//	PCA9685PWMFreq(fd, SERVO_MOTOR_PWM_FREQ);
-//
-//	//Reset PWM outputs
-//	wiringPiI2CWriteReg16(fd, REG_LEDALL_ON_LOW_ADDR, 0x0);
-//	wiringPiI2CWriteReg16(fd, REG_LEDALL_OFF_LOW_ADDR, 0x1000);
-//	int32_t mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
-//	volatile I2CReg_t *i2c_reg = const_cast<volatile I2CReg_t *>(reinterpret_cast<I2CReg_t *>(mmap(NULL, sizeof(I2CReg_t), PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PERIPHERAL_PHY_BASE + GPIO_I2C1_OFFSET)));
-//	printf("Ctrl  :\t0x%08x\n", i2c_reg->C.word);
-//	printf("Status:\t0x%08x\n", i2c_reg->S.word);
-//	printf("CLKT  :\t0x%08x\n", i2c_reg->CLKT.word);
-//	printf("DEL   :\t0x%08x\n", i2c_reg->DEL.word);
-//	printf("DIV   :\t0x%08x\n", i2c_reg->DIV.word);
-//	printf("DLEN  :\t0x%08x\n", i2c_reg->DLEN.word);
-//	sleep(1);
-//	int lr_val = LEFT_RIGTH_MIN;
-//	int ud_val = UP_DOWN_MIN;
-//	int percentage = 0;
-//	int increase = 1;
-//	while(1)
-//	{
-//		PCA9685Control(fd, LEFT_RIGHT_SERVO, lr_val);
-//		PCA9685Control(fd, UP_DOWM_SERVO, ud_val);
-//		usleep(500000);
-//		if (increase)
-//			percentage += 2;
-//		else
-//			percentage -= 2;
-//		if (percentage >= 100)
-//			increase = 0;
-//		else if (percentage <= 0)
-//			increase = 1;
-//		lr_val = LEFT_RIGTH_MIN + (LEFT_RIGTH_RANGE * percentage) / 100;
-//		ud_val = UP_DOWN_MIN + (UP_DOWN_RANGE * percentage) / 100;
-//	}
+	wiringPiI2CWriteReg8(fd, REG_MODE1_ADDR, mode1_val | 0x20);
+
+	PCA9685PWMFreq(fd, SERVO_MOTOR_PWM_FREQ);
+
+	//Reset PWM outputs
+	wiringPiI2CWriteReg16(fd, REG_LEDALL_ON_LOW_ADDR, 0x0);
+	wiringPiI2CWriteReg16(fd, REG_LEDALL_OFF_LOW_ADDR, 0x1000);
+
+	sleep(1);
+	int lr_val = LEFT_RIGHT_MIN;
+	int ud_val = UP_DOWN_MIN;
+	int percentage = 0;
+	int increase = 1;
+	while(1)
+	{
+		PCA9685Control(fd, LEFT_RIGHT_SERVO, lr_val);
+		PCA9685Control(fd, UP_DOWM_SERVO, ud_val);
+		usleep(500000);
+		if (increase)
+			percentage += 2;
+		else
+			percentage -= 2;
+		if (percentage >= 100)
+			increase = 0;
+		else if (percentage <= 0)
+			increase = 1;
+		lr_val = LEFT_RIGHT_MIN + (LEFT_RIGHT_RANGE * percentage) / 100;
+		ud_val = UP_DOWN_MIN + (UP_DOWN_RANGE * percentage) / 100;
+	}
+}
+#endif
+
+CameraMotor::CameraMotor(int32_t id, float freq, int32_t max, int32_t min, PCA9685Ctrl &controller)
+	: m_id(id),
+	  m_freq(freq),
+	  m_max(max),
+	  m_min(min),
+	  m_pwm_controller(&controller)
+{
+
+}
+
+CameraMotor::~CameraMotor()
+{
+	m_pwm_controller = NULL;
+}
+
+void CameraMotor::Move(int32_t posn)
+{
+	assert(posn >= m_min && posn <= m_max);
+	assert(m_pwm_controller != NULL);
+	m_pwm_controller->UpdatePWMOutput(m_id, (float)posn / 4096);
 }
 
 void TwoMotorCtrl()
 {
-	GpioI2C i2c(2, 3);
-	i2c.write(PCA9685_I2C_ADDRESS);
-	int mode1_val = i2c.read(PCA9685_I2C_ADDRESS, REG_MODE1_ADDR);
-//	i2c.write(PCA9685_I2C_ADDRESS, REG_MODE1_ADDR, mode1_val | 0x20);
+	PCA9685Ctrl camera_motor_ctrl(PCA9685_PIN_SDA, PCA9685_PIN_SCL, PCA9685_I2C_ADDR);
+	CameraMotor motor_lr(LEFT_RIGHT_SERVO, CAMERA_MOTOR_PWM_FREQ, LEFT_RIGHT_MIN, LEFT_RIGHT_MAX, camera_motor_ctrl);
+	CameraMotor motor_ud(UP_DOWM_SERVO, CAMERA_MOTOR_PWM_FREQ, UP_DOWN_MIN, UP_DOWN_MAX, camera_motor_ctrl);
+
+	//Set the PWM frequency
+	camera_motor_ctrl.UpdateFreq(CAMERA_MOTOR_PWM_FREQ);
+
+	//Reset PWM outputs
+	camera_motor_ctrl.UpdateAllOutput(0.0);
 }
