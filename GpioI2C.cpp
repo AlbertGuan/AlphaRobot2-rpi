@@ -20,8 +20,8 @@ const uint32_t GpioI2C::GPIO_I2C_PHY_ADDR[2] = { PERIPHERAL_PHY_BASE + GPIO_I2C0
 int32_t GpioI2C::num_of_i2c_inst = 0;
 int32_t GpioI2C::i2c_0_in_use = -1;
 int32_t GpioI2C::i2c_1_in_use = -1;
-I2CCtrlReg_t GpioI2C::CTRL = { 0 };
-I2CStatusReg_t GpioI2C::STATUS = { 0 };
+GpioI2C::I2CCtrlReg_t GpioI2C::CTRL = { 0 };
+GpioI2C::I2CStatusReg_t GpioI2C::STATUS = { 0 };
 
 PinSel_t GpioI2C::getPinSel(int32_t sda, int32_t scl)
 {

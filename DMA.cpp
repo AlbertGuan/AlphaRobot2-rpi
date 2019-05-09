@@ -10,7 +10,7 @@
 #include "DMA.h" // for DMA addresses, etc.
 
 uint32_t DMACtrl::channel_in_use = 0;
-volatile DMAReg_t *DMACtrl::dma_regs = NULL;
+volatile DMACtrl::DMAReg_t *DMACtrl::dma_regs = NULL;
 int32_t DMACtrl::dma_instances = 0;
 
 int dma_main()
@@ -71,7 +71,7 @@ uint32_t DMACtrl::getSrcPhyAddr()
 	return (uint32_t)m_src_physical;
 }
 
-volatile DMACtrlBlock_t *DMACtrl::getCBVirtAddr()
+volatile DMACtrl::DMACtrlBlock_t *DMACtrl::getCBVirtAddr()
 {
 	return (volatile DMACtrlBlock_t *)m_cb_virtual;
 }

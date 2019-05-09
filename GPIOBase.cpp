@@ -15,9 +15,7 @@
 #include <string>
 #include "GpioBase.h"
 
-
-
-volatile gpio_reg_t *GpioBase::gpio_base = NULL;
+volatile GpioBase::gpio_reg_t *GpioBase::gpio_base = NULL;
 int32_t GpioBase::num_of_gpio_inst = 0;
 
 GpioBase::GpioBase(const std::vector<int32_t> &pin, PinSel_t pin_sel)

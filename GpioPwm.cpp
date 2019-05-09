@@ -18,7 +18,7 @@
 #include "GpioPwm.h"
 #include "utilities.h"
 
-volatile pwm_ctrl_t *GpioPwm::pwm_base = NULL;
+volatile GpioPwm::pwm_ctrl_t *GpioPwm::pwm_base = NULL;
 volatile uint32_t *GpioPwm::clk_base = NULL;
 volatile uint32_t *GpioPwm::CM_PERIICTL = NULL;
 volatile uint32_t *GpioPwm::CM_PERIIDIV = NULL;
@@ -259,7 +259,7 @@ void GpioPwm::SetPWMCtrl(const pwm_reg_CTL_t& ctl)
 	usleep(100);
 }
 
-const volatile pwm_reg_CTL_t& GpioPwm::GetPWMCTL()
+const volatile GpioPwm::pwm_reg_CTL_t& GpioPwm::GetPWMCTL()
 {
 	return pwm_base->CTL;
 }

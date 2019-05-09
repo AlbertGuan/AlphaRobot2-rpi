@@ -13,15 +13,6 @@
 #include "GpioPwm.h"
 #include "Rpi3BConstants.h"
 
-class GpioPwm;
-
-typedef struct
-{
-	uint32_t R;
-	uint32_t G;
-	uint32_t B;
-} LEDPixel_t;
-
 /*
  * The WS2812B LED takes 24 "bits" (G, R, B) to control the color and brightness
  * We have 4 WS2812B LEDs on the robot, so we need 4 * 24 = 96"bits" to control all of them
@@ -39,6 +30,13 @@ typedef struct
 class WS2812BCtrl
 {
 public:
+	typedef struct
+	{
+		uint32_t R;
+		uint32_t G;
+		uint32_t B;
+	} LEDPixel_t;
+
 	WS2812BCtrl(float brightness = 0.3);
 	~WS2812BCtrl();
 

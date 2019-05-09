@@ -9,25 +9,25 @@
 
 #include "GpioI2C.h"
 
-typedef union
-{
-	struct
-	{
-		uint8_t ALLCALL		: 1;	//1: Responds to LED All Call I2C address
-		uint8_t SUB3		: 1;	//1: Responds to SUB3 Call I2C address
-		uint8_t SUB2		: 1;	//1: Responds to SUB2 Call I2C address
-		uint8_t SUB1		: 1;	//1: Responds to SUB1 Call I2C address
-		uint8_t SLEEP		: 1;	//1: Low power mode, oscillator off
-		uint8_t AI			: 1;	//1: Register auto-increment
-		uint8_t EXTCLK		: 1;	//1: Use EXTCLK pin clock
-		uint8_t RESTART		: 1;	//1: Restart enable
-	};
-	uint8_t word;
-}MODE1Reg_t;
-
 class PCA9685Ctrl
 {
 public:
+	typedef union
+	{
+		struct
+		{
+			uint8_t ALLCALL		: 1;	//1: Responds to LED All Call I2C address
+			uint8_t SUB3		: 1;	//1: Responds to SUB3 Call I2C address
+			uint8_t SUB2		: 1;	//1: Responds to SUB2 Call I2C address
+			uint8_t SUB1		: 1;	//1: Responds to SUB1 Call I2C address
+			uint8_t SLEEP		: 1;	//1: Low power mode, oscillator off
+			uint8_t AI			: 1;	//1: Register auto-increment
+			uint8_t EXTCLK		: 1;	//1: Use EXTCLK pin clock
+			uint8_t RESTART		: 1;	//1: Restart enable
+		};
+		uint8_t word;
+	}MODE1Reg_t;
+
 	PCA9685Ctrl(int32_t sda, int32_t scl, const int8_t addr);
 	virtual ~PCA9685Ctrl();
 	static int8_t GetLEDxOnLowAddr(int32_t x);
