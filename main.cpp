@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	using namespace std;
 	cout << "Hello Raspberry Pi!" << endl;
 
-	//rpiI2CInit();
+//	rpiI2CInit();
 
 //	RBGControl();
 
@@ -35,10 +35,12 @@ int main(int argc, char *argv[])
 
 //	PWMTest();
 
-	WS2812BCtrl leds(0.3);
-	leds.WaterLight();
+//	WS2812BCtrl leds(0.3);
+//	leds.WaterLight();
 
 //	MotorDemo();
+
+	TwoMotorCtrl();
 	return 0;
 }
 

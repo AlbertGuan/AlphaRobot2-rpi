@@ -127,6 +127,10 @@ public:
 	static PinSel_t getPinSel(int32_t sda, int32_t scl);
 	void getChannel();
 
+	int8_t read(uint32_t addr, uint32_t reg);
+	int32_t write(uint32_t addr);
+	int32_t write(uint32_t addr, int8_t val);
+	//int32_t write(uint32_t addr, std::vector<int8_t> &vals);
 	void OnOff(int32_t val);
 	void ClearFIFO();
 protected:

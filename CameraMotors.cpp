@@ -4,10 +4,18 @@
  *  Created on: Apr 9, 2019
  *      Author: aobog
  */
-#include "CameraMotors.h"
-
 #include <iostream>
+#include <iomanip>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <bitset>
+#include <assert.h>
+#include <exception>
+#include "CameraMotors.h"
+#include "GpioI2C.h"
 
 /*Based on the datasheet of SG90 motor
  *1. the PWM period is 20ms (50Hz)
@@ -95,33 +103,49 @@ void rpiI2CInit()
 
 	//Enable the auto-increment of registers
 	int mode1_val = wiringPiI2CReadReg8(fd, REG_MODE1_ADDR);
-	wiringPiI2CWriteReg8(fd, REG_MODE1_ADDR, mode1_val | 0x20);
-
-	PCA9685PWMFreq(fd, SERVO_MOTOR_PWM_FREQ);
-
-	//Reset PWM outputs
-	wiringPiI2CWriteReg16(fd, REG_LEDALL_ON_LOW_ADDR, 0x0);
-	wiringPiI2CWriteReg16(fd, REG_LEDALL_OFF_LOW_ADDR, 0x1000);
-	sleep(1);
-	int lr_val = LEFT_RIGTH_MIN;
-	int ud_val = UP_DOWN_MIN;
-	int percentage = 0;
-	int increase = 1;
-	while(1)
-	{
-		PCA9685Control(fd, LEFT_RIGHT_SERVO, lr_val);
-		PCA9685Control(fd, UP_DOWM_SERVO, ud_val);
-		usleep(500000);
-		if (increase)
-			percentage += 2;
-		else
-			percentage -= 2;
-		if (percentage >= 100)
-			increase = 0;
-		else if (percentage <= 0)
-			increase = 1;
-		lr_val = LEFT_RIGTH_MIN + (LEFT_RIGTH_RANGE * percentage) / 100;
-		ud_val = UP_DOWN_MIN + (UP_DOWN_RANGE * percentage) / 100;
-	}
+	printf("mode1_val: 0x%08x\n", mode1_val);
+//	wiringPiI2CWriteReg8(fd, REG_MODE1_ADDR, mode1_val | 0x20);
+//
+//	PCA9685PWMFreq(fd, SERVO_MOTOR_PWM_FREQ);
+//
+//	//Reset PWM outputs
+//	wiringPiI2CWriteReg16(fd, REG_LEDALL_ON_LOW_ADDR, 0x0);
+//	wiringPiI2CWriteReg16(fd, REG_LEDALL_OFF_LOW_ADDR, 0x1000);
+//	int32_t mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
+//	volatile I2CReg_t *i2c_reg = const_cast<volatile I2CReg_t *>(reinterpret_cast<I2CReg_t *>(mmap(NULL, sizeof(I2CReg_t), PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PERIPHERAL_PHY_BASE + GPIO_I2C1_OFFSET)));
+//	printf("Ctrl  :\t0x%08x\n", i2c_reg->C.word);
+//	printf("Status:\t0x%08x\n", i2c_reg->S.word);
+//	printf("CLKT  :\t0x%08x\n", i2c_reg->CLKT.word);
+//	printf("DEL   :\t0x%08x\n", i2c_reg->DEL.word);
+//	printf("DIV   :\t0x%08x\n", i2c_reg->DIV.word);
+//	printf("DLEN  :\t0x%08x\n", i2c_reg->DLEN.word);
+//	sleep(1);
+//	int lr_val = LEFT_RIGTH_MIN;
+//	int ud_val = UP_DOWN_MIN;
+//	int percentage = 0;
+//	int increase = 1;
+//	while(1)
+//	{
+//		PCA9685Control(fd, LEFT_RIGHT_SERVO, lr_val);
+//		PCA9685Control(fd, UP_DOWM_SERVO, ud_val);
+//		usleep(500000);
+//		if (increase)
+//			percentage += 2;
+//		else
+//			percentage -= 2;
+//		if (percentage >= 100)
+//			increase = 0;
+//		else if (percentage <= 0)
+//			increase = 1;
+//		lr_val = LEFT_RIGTH_MIN + (LEFT_RIGTH_RANGE * percentage) / 100;
+//		ud_val = UP_DOWN_MIN + (UP_DOWN_RANGE * percentage) / 100;
+//	}
 }
 
+void TwoMotorCtrl()
+{
+	GpioI2C i2c(2, 3);
+	i2c.write(PCA9685_I2C_ADDRESS);
+	int mode1_val = i2c.read(PCA9685_I2C_ADDRESS, REG_MODE1_ADDR);
+//	i2c.write(PCA9685_I2C_ADDRESS, REG_MODE1_ADDR, mode1_val | 0x20);
+}

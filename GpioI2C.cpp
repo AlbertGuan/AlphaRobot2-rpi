@@ -75,6 +75,66 @@ void GpioI2C::getChannel()
 	}
 }
 
+int8_t GpioI2C::read(uint32_t addr, uint32_t reg)
+{
+	write(addr, reg);
+	I2CCtrlReg_t ctrl;
+	ctrl.word = 0;
+	ctrl.I2CEN = 1;
+	ctrl.ST = 1;
+	ctrl.CLEAR = 1;
+	ctrl.READ = 1;
+	I2CStatusReg_t status;
+	status.word = 0;
+	status.CLKT = 1;
+	status.ERR = 1;
+	status.DONE = 1;
+
+	m_i2c_base->A.ADDR = addr;
+	m_i2c_base->DLEN.DLEN = 1;
+	m_i2c_base->C.word = ctrl.word;
+	m_i2c_base->S.word = status.word;
+	while (0 == m_i2c_base->S.DONE);
+	return m_i2c_base->FIFO.DATA;
+}
+
+int32_t GpioI2C::write(uint32_t addr)
+{
+	I2CCtrlReg_t ctrl;
+	ctrl.I2CEN = 1;
+	ctrl.ST = 1;
+	I2CStatusReg_t status;
+	status.CLKT = 1;
+	status.ERR = 1;
+	status.DONE = 1;
+	m_i2c_base->A.ADDR = addr;
+	m_i2c_base->DLEN.DLEN = 0;
+	m_i2c_base->C.word = ctrl.word;
+	m_i2c_base->S.word = status.word;
+
+	while (0 == m_i2c_base->S.DONE);
+	return 1;
+}
+
+int32_t GpioI2C::write(uint32_t addr, int8_t val)
+{
+	I2CCtrlReg_t ctrl;
+	ctrl.I2CEN = 1;
+	ctrl.ST = 1;
+	I2CStatusReg_t status;
+	status.CLKT = 1;
+	status.ERR = 1;
+	status.DONE = 1;
+	m_i2c_base->A.ADDR = addr;
+	m_i2c_base->DLEN.DLEN = 1;
+	m_i2c_base->FIFO.DATA = val;
+	m_i2c_base->C.word = ctrl.word;
+	m_i2c_base->S.word = status.word;
+
+	while (0 == m_i2c_base->S.DONE);
+	return 1;
+}
+
 void GpioI2C::OnOff(int32_t val)
 {
 	m_i2c_base->C.I2CEN = val;

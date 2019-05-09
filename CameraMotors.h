@@ -11,5 +11,5 @@
 #include <wiringPiI2C.h>
 
 void rpiI2CInit();
-
+void TwoMotorCtrl();
 #endif /* CAMERAMOTORS_H_ */
