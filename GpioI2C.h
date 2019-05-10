@@ -73,16 +73,6 @@ public:
 	{
 		struct
 		{
-			uint32_t DATA		: 8;
-			uint32_t res		: 24;
-		};
-		uint32_t word;
-	}I2CFIFOReg_t;
-
-	typedef union
-	{
-		struct
-		{
 			uint32_t CDIV		: 16;
 			uint32_t res		: 16;
 		};
@@ -115,7 +105,7 @@ public:
 		I2CStatusReg_t S;			//Status
 		I2CLenReg_t DLEN;			//Data Length
 		I2CAddrReg_t A;				//Address
-		I2CFIFOReg_t FIFO;			//FIFO
+		uint32_t FIFO;				//FIFO, Do NOT use union, or it fails while writing multiple values
 		I2CDIVReg_t DIV;			//Clock Divider
 		I2CDELReg_t DEL;			//Data Delay
 		I2CCLKTReg_t CLKT;			//Clock Stretch Timeout

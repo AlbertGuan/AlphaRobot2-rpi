@@ -139,11 +139,11 @@ void rpiI2CInit()
 }
 #endif
 
-CameraMotor::CameraMotor(int32_t id, float freq, int32_t max, int32_t min, PCA9685Ctrl &controller)
+CameraMotor::CameraMotor(int32_t id, float freq, int32_t min, int32_t max, PCA9685Ctrl &controller)
 	: m_id(id),
 	  m_freq(freq),
-	  m_max(max),
 	  m_min(min),
+	  m_max(max),
 	  m_pwm_controller(&controller)
 {
 
@@ -164,12 +164,35 @@ void CameraMotor::Move(int32_t posn)
 void TwoMotorCtrl()
 {
 	PCA9685Ctrl camera_motor_ctrl(PCA9685_PIN_SDA, PCA9685_PIN_SCL, PCA9685_I2C_ADDR);
+	std::cout << "PCA9685 Init" << std::endl;
 	CameraMotor motor_lr(LEFT_RIGHT_SERVO, CAMERA_MOTOR_PWM_FREQ, LEFT_RIGHT_MIN, LEFT_RIGHT_MAX, camera_motor_ctrl);
 	CameraMotor motor_ud(UP_DOWM_SERVO, CAMERA_MOTOR_PWM_FREQ, UP_DOWN_MIN, UP_DOWN_MAX, camera_motor_ctrl);
-
+	std::cout << "Motor Init" << std::endl;
 	//Set the PWM frequency
 	camera_motor_ctrl.UpdateFreq(CAMERA_MOTOR_PWM_FREQ);
-
+	std::cout << "PWM Updated" << std::endl;
 	//Reset PWM outputs
 	camera_motor_ctrl.UpdateAllOutput(0.0);
+
+	sleep(1);
+	int lr_val = LEFT_RIGHT_MIN;
+	int ud_val = UP_DOWN_MIN;
+	int percentage = 0;
+	int increase = 1;
+	while(1)
+	{
+		motor_lr.Move(lr_val);
+		motor_ud.Move(ud_val);
+		usleep(500000);
+		if (increase)
+			percentage += 2;
+		else
+			percentage -= 2;
+		if (percentage >= 100)
+			increase = 0;
+		else if (percentage <= 0)
+			increase = 1;
+		lr_val = LEFT_RIGHT_MIN + (LEFT_RIGHT_RANGE * percentage) / 100;
+		ud_val = UP_DOWN_MIN + (UP_DOWN_RANGE * percentage) / 100;
+	}
 }

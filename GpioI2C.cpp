@@ -82,6 +82,7 @@ void GpioI2C::UpdateWriteCtrl()
 	CTRL.word = 0;
 	CTRL.I2CEN = 1;
 	CTRL.ST = 1;
+	CTRL.CLEAR = 1;
 	m_i2c_base->C.word = CTRL.word;
 }
 
@@ -106,12 +107,15 @@ void GpioI2C::UpdateStatus()
 int16_t GpioI2C::read(int8_t addr, int8_t reg, int8_t *vals, const int16_t len)
 {
 	assert(vals != NULL);
+	assert(m_i2c_base != NULL);
+	printf("GpioI2C::read: 0x%p\n", m_i2c_base);
 	if (1 == write(addr, reg))
 	{
 		int16_t received = 0;
+		printf("Assign Address: %d\n", addr);
 		m_i2c_base->A.ADDR = addr;
+		printf("Assign Length: %d\n", len);
 		m_i2c_base->DLEN.DLEN = len;
-
 		UpdateReadCtrl();
 		UpdateStatus();
 
@@ -119,10 +123,11 @@ int16_t GpioI2C::read(int8_t addr, int8_t reg, int8_t *vals, const int16_t len)
 		{
 			while (m_i2c_base->S.RXD && received < len)
 			{
-				vals[received] = m_i2c_base->FIFO.DATA;
+				vals[received] = m_i2c_base->FIFO;
 				++received;
 			}
 		}
+		printf("Got all\n");
 		while (0 == m_i2c_base->S.DONE);
 	}
 	return 0;
@@ -135,27 +140,33 @@ int16_t GpioI2C::write(int8_t addr)
 
 int16_t GpioI2C::write(int8_t addr, int8_t val)
 {
-	return write(addr, {val});
+	return write(addr, std::vector<int8_t>{val});
 }
 
 int16_t GpioI2C::write(int8_t addr, const std::vector<int8_t> &vals)
 {
 	int16_t len = vals.size();
 	int16_t sent = 0;
-	UpdateStatus();
-	UpdateWriteCtrl();
+
 	m_i2c_base->A.ADDR = addr;
 	m_i2c_base->DLEN.DLEN = len;
+	std::cout << "I2C write to " << static_cast<int32_t>(addr) << " " << len << " bytes of data\n";
+	UpdateStatus();
+	UpdateWriteCtrl();
+
 	while (sent < len)
 	{
-		while (0 == m_i2c_base->S.TXD && sent < len)
+		if (1 == m_i2c_base->S.TXD)
 		{
-			m_i2c_base->FIFO.DATA = vals[sent];
+			m_i2c_base->FIFO = vals[sent];
 			++sent;
 		}
 	}
+	std::cout << sent << " bytes of data written to  FIFO\n";
 
 	while (0 == m_i2c_base->S.DONE);
+
+	std::cout << "I2C write finished " << sent << " bytes of data sent" << std::endl;
 
 	return sent;
 }
@@ -180,13 +191,17 @@ GpioI2C::GpioI2C(int32_t pin_sda, int32_t pin_scl)
 	//Step 1: map registers
 	try
 	{
-		m_i2c_base = const_cast<volatile I2CReg_t *>(reinterpret_cast<I2CReg_t *>(mmap(NULL, sizeof(I2CReg_t), PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, GPIO_I2C_PHY_ADDR[m_i2c_channel])));
+		m_i2c_base = const_cast<volatile I2CReg_t *>(static_cast<I2CReg_t *>(mmap(NULL, sizeof(I2CReg_t), PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, GPIO_I2C_PHY_ADDR[m_i2c_channel])));
 		if (MAP_FAILED == m_i2c_base)
 			throw "Failed to map m_i2c_base channel " + std::to_string(m_i2c_channel);
 	}
 	catch (const std::string &exp)
 	{
 		std::cout << "GpioI2C Constructor got exception: " << exp << std::endl;
+	}
+	catch (...)
+	{
+		std::cout << "GpioI2C Constructor got unknown exception: " << std::endl;
 	}
 
 	//Step 2: Disable the channel

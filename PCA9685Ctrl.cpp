@@ -45,11 +45,11 @@ PCA9685Ctrl::PCA9685Ctrl(int32_t sda, int32_t scl, const int8_t addr)
 	: m_i2c_addr(addr)
 {
 	m_i2c = new GpioI2C(sda, scl);
-
 }
 
 PCA9685Ctrl::~PCA9685Ctrl()
 {
+	UpdateAllOutput(0.0);
 	free(m_i2c);
 	m_i2c = NULL;
 }
@@ -103,8 +103,11 @@ int32_t PCA9685Ctrl::UpdateFreq(float freq)
 	//2. Set the PRE_SCALE
 	//3. Clear the sleep bit
 	Sleep();
+	std::cout << "Sleep" << std::endl;
 	m_i2c->write(m_i2c_addr, {REG_PRE_SCALE_ADDR, prescal});
+	std::cout << "Write" << std::endl;
 	Wakeup();
+	std::cout << "Wake Up" << std::endl;
 
 	//According to foot node 2 at page 14, "It takes 500us max for the oscillator to be up and running once SLEEP bit has been
 	//set to logic 0"
@@ -127,10 +130,10 @@ int32_t PCA9685Ctrl::UpdatePWMOutput(int32_t idx, float duty_cycle, int32_t risi
 	int8_t on_high = static_cast<int8_t>(rising_edge_delay >> 8);
 	int8_t off_low = static_cast<int8_t>(off & 0xFF);
 	int8_t off_high = static_cast<int8_t>(off >> 8);
-	m_i2c->write(m_i2c_addr, {GetLEDxOnLowAddr(idx), on_low,
-								GetLEDxOnHighAddr(idx), on_high,
-								GetLEDxOffLowAddr(idx), off_low,
-								GetLEDxOffHighAddr(idx), off_high});
+	m_i2c->write(m_i2c_addr, {GetLEDxOnLowAddr(idx), on_low});
+	m_i2c->write(m_i2c_addr, {GetLEDxOnHighAddr(idx), on_high});
+	m_i2c->write(m_i2c_addr, {GetLEDxOffLowAddr(idx), off_low});
+	m_i2c->write(m_i2c_addr, {GetLEDxOffHighAddr(idx), off_high});
 	return 0;
 }
 
@@ -144,10 +147,11 @@ int32_t PCA9685Ctrl::UpdateAllOutput(float duty_cycle, int32_t rising_edge_delay
 	int8_t on_high = static_cast<int8_t>(rising_edge_delay >> 8);
 	int8_t off_low = static_cast<int8_t>(off & 0xFF);
 	int8_t off_high = static_cast<int8_t>(off >> 8);
-	m_i2c->write(m_i2c_addr, {REG_LEDALL_ON_LOW_ADDR, on_low,
-								REG_LEDALL_ON_HIGH_ADDR, on_high,
-								REG_LEDALL_OFF_LOW_ADDR, off_low,
-								REG_LEDALL_OFF_HIGH_ADDR, off_high});
+	//Note: PCA9685's write format is <reg> <val>, don't put multiple sets in one packet
+	m_i2c->write(m_i2c_addr, {REG_LEDALL_ON_LOW_ADDR, on_low});
+	m_i2c->write(m_i2c_addr, {REG_LEDALL_ON_HIGH_ADDR, on_high});
+	m_i2c->write(m_i2c_addr, {REG_LEDALL_OFF_LOW_ADDR, off_low});
+	m_i2c->write(m_i2c_addr, {REG_LEDALL_OFF_HIGH_ADDR, off_high});
 	return 0;
 }
 

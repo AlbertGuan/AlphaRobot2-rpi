@@ -21,14 +21,14 @@ void TwoMotorCtrl();
 class CameraMotor
 {
 public:
-	CameraMotor(int32_t id, float freq, int32_t max, int32_t min, PCA9685Ctrl &controller);
+	CameraMotor(int32_t id, float freq, int32_t min, int32_t max, PCA9685Ctrl &controller);
 	~CameraMotor();
 	void SetController(PCA9685Ctrl &controller);
 	void Move(int32_t posn);
 private:
 	int32_t m_id;					//Which channel the motor is connected to on PCA9685
 	float m_freq;
-	int32_t m_max;
 	int32_t m_min;
+	int32_t m_max;
 	PCA9685Ctrl *m_pwm_controller;
 };
