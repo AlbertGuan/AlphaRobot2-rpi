@@ -137,13 +137,14 @@ private:
 	static const uint32_t GPIO_CLK_PHY_ADDR 	= PERIPHERAL_PHY_BASE + GPIO_CLOCK_OFFSET;
 	static const uint32_t PWM_FIFO_PHY_ADDR		= GPIO_PWM_PHY_ADDR + offsetof(pwm_ctrl_t, FIF1);
 	static const uint32_t PWM_FIFO_BUS_ADDR		= PERIPHERAL_BUS_BASE + GPIO_PWM_OFFSET + offsetof(pwm_ctrl_t, FIF1);
-	static const uint32_t CM_PERIICTL_OFFSET 	= 0x000000A0;
-	static const uint32_t CM_PERIIDIV_OFFSET 	= 0x000000A4;
+	//They are registers to control the pwm frequency, https://elinux.org/BCM2835_registers#CM_PWMCTL
+	static const uint32_t CM_PWMCTL_OFFSET 	= 0x000000A0;			//CM_PWMCTL
+	static const uint32_t CM_PWMDIV_OFFSET 	= 0x000000A4;			//CM_PWMDIV
 
 	static volatile pwm_ctrl_t *pwm_base;
 	static volatile uint32_t *clk_base;
-	static volatile uint32_t *CM_PERIICTL;
-	static volatile uint32_t *CM_PERIIDIV;
+	static volatile uint32_t *CM_PWMCTL;
+	static volatile uint32_t *CM_PWMDIV;
 
 	static int32_t num_of_pwm_inst;
 	static int32_t pwm_1_in_use;

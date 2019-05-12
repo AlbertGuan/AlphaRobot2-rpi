@@ -20,6 +20,7 @@
 #include "GpioPwm.h"
 #include "WS2812BCtrl.h"
 #include "MotorCtrl.h"
+#include "GpioClk.h"
 
 
 int main(int argc, char *argv[])
@@ -40,7 +41,9 @@ int main(int argc, char *argv[])
 
 //	MotorDemo();
 
-	TwoMotorCtrl();
+//	TwoMotorCtrl();
+
+	BuzzerTest();
 	return 0;
 }
 

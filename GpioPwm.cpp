@@ -20,8 +20,8 @@
 
 volatile GpioPwm::pwm_ctrl_t *GpioPwm::pwm_base = NULL;
 volatile uint32_t *GpioPwm::clk_base = NULL;
-volatile uint32_t *GpioPwm::CM_PERIICTL = NULL;
-volatile uint32_t *GpioPwm::CM_PERIIDIV = NULL;
+volatile uint32_t *GpioPwm::CM_PWMCTL = NULL;
+volatile uint32_t *GpioPwm::CM_PWMDIV = NULL;
 
 int32_t GpioPwm::num_of_pwm_inst = 0;
 int32_t GpioPwm::pwm_1_in_use = -1;
@@ -112,8 +112,8 @@ void GpioPwm::Init()
 		{
 			std::cout << "GpioPwm Constructor got exception: " << exp << std::endl;
 		}
-		CM_PERIICTL = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_PERIICTL_OFFSET));
-		CM_PERIIDIV = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_PERIIDIV_OFFSET));
+		CM_PWMCTL = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_PWMCTL_OFFSET));
+		CM_PWMDIV = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_PWMDIV_OFFSET));
 	}
 }
 
@@ -131,8 +131,8 @@ void GpioPwm::Uninit()
 		{
 			munmap(static_cast<void *>(const_cast<uint32_t *>(clk_base)), BLOCK_SIZE);
 			clk_base = NULL;
-			CM_PERIICTL = NULL;
-			CM_PERIIDIV = NULL;
+			CM_PWMCTL = NULL;
+			CM_PWMDIV = NULL;
 		}
 	}
 }
@@ -196,16 +196,16 @@ void GpioPwm::SetClock(int32_t clk_div)
 	std::cout << "Set clock divisor to " << std::dec << clk_div << std::endl;
 	//We need to stop the pwm and pwm clock before changing the clock divisor
 	pwm_base->CTL.word = 0;
-	//Some information on the CMPERIICTL: https://elinux.org/BCM2835_registers#CM_PERIICTL
-	*CM_PERIICTL = BCM_PASSWORD | 0x01;
+	//Some information on the CMPERIICTL: https://elinux.org/BCM2835_registers#CM_PWMCTL
+	*CM_PWMCTL = BCM_PASSWORD | 0x01;
 	usleep(1000);
 
-	while ((*CM_PERIICTL & 0x80) != 0)	// Wait for clock to be !BUSY
+	while ((*CM_PWMCTL & 0x80) != 0)	// Wait for clock to be !BUSY
 		usleep(1);
 
-	*CM_PERIIDIV = BCM_PASSWORD | (clk_div << 12);
+	*CM_PWMDIV = BCM_PASSWORD | (clk_div << 12);
 
-	*CM_PERIICTL = BCM_PASSWORD | 0x11;	// Start PWM clock
+	*CM_PWMCTL = BCM_PASSWORD | 0x11;	// Start PWM clock
 	pwm_base->CTL.word = pwm_CTL;			// restore PWM_CONTROL
 	usleep(1000);
 }
@@ -305,8 +305,8 @@ void GpioPwm::PrintAddress()
 //	cout << "pwm_base->DAT2:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->DAT2 << "\t Val: " << setw(8) << hex << pwm_base->DAT2 << endl;
 //	cout << endl;
 //
-//	cout << "CM_PERIICTL:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) CM_PERIICTL << "\t Val: " << setw(8) << hex << *CM_PERIICTL << endl;
-//	cout << "CM_PERIIDIV:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) CM_PERIIDIV << "\t Val: " << setw(8) << hex << *CM_PERIIDIV << endl;
+//	cout << "CM_PWMCTL:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) CM_PWMCTL << "\t Val: " << setw(8) << hex << *CM_PWMCTL << endl;
+//	cout << "CM_PWMDIV:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) CM_PWMDIV << "\t Val: " << setw(8) << hex << *CM_PWMDIV << endl;
 //}
 
 

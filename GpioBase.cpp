@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <bitset>
 #include <string>
+
 #include "GpioBase.h"
 
 volatile GpioBase::gpio_reg_t *GpioBase::gpio_base = NULL;
