@@ -21,6 +21,7 @@
 #include "WS2812BCtrl.h"
 #include "MotorCtrl.h"
 #include "GpioClk.h"
+#include "GpioIn.h"
 
 
 int main(int argc, char *argv[])
@@ -43,7 +44,9 @@ int main(int argc, char *argv[])
 
 //	TwoMotorCtrl();
 
-	BuzzerTest();
+//	BuzzerTest();
+
+	JoyStickDemo();
 	return 0;
 }
 
