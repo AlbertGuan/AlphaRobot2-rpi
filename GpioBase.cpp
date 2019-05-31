@@ -41,12 +41,13 @@ void GpioBase::SetPinSelection()
 	{
 		uint32_t word_off = pin / 10;		//Each GPIO selection word contains 10 pins
 		uint32_t bit_off = pin % 10 * 3;	//Each pin takes 3 bits in GPIO selection word
-		printf("Pin %u: word_off: %u, bit_off: %u\n", pin, word_off, bit_off);
+
 		uint32_t before = gpio_base->select[word_off];
 		std::bitset<32> b(before);
-		gpio_base->select[word_off] &= ~(0x7 << bit_off);
-		gpio_base->select[word_off] |= m_pin_sel << bit_off;
-		std::bitset<32> a(gpio_base->select[word_off]);
+		before &= ~(0x7 << bit_off);
+		before |= m_pin_sel << bit_off;
+		std::bitset<32> a(before);
+		gpio_base->select[word_off] = before;
 		std::cout << "Before: " << b << std::endl;
 		std::cout << "After:  " << a << std::endl;
 	}

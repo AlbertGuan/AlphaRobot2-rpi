@@ -56,6 +56,13 @@ typedef enum GPIO_FUN_SELECT
 	FSEL_ALT_5	= 0b0010,
 }PinSel_t;
 
+typedef enum GPIO_PULL
+{
+	PULL_DISABLE	= 0b00,
+	PULL_DOWN		= 0b01,
+	PULL_UP			= 0b10,
+}PinPull_t;
+
 enum ONOFF
 {
 	OFF = 0,

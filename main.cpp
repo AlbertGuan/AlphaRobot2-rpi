@@ -22,7 +22,7 @@
 #include "MotorCtrl.h"
 #include "GpioClk.h"
 #include "GpioIn.h"
-
+#include "ProximitySensor.h"
 
 int main(int argc, char *argv[])
 {
@@ -47,6 +47,8 @@ int main(int argc, char *argv[])
 //	BuzzerTest();
 
 	JoyStickDemo();
+
+//	ProximitySensorTest();
 	return 0;
 }
 

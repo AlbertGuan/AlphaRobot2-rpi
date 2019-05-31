@@ -12,10 +12,9 @@
 class GpioIn : public GpioBase
 {
 public:
-	GpioIn(int32_t pin);
-	virtual ~GpioIn();
 	typedef enum
 	{
+		NONE,
 		Rising,
 		Falling,
 		High,
@@ -23,11 +22,22 @@ public:
 		AsyncRising,
 		AsyncFalling,
 	}GpioInEvent;
-	static void CheckInput(const std::vector<int32_t> &candidates, std::vector<int32_t> &rise_pins, GpioInEvent event);
 
+	GpioIn(int32_t pin, GpioInEvent event = NONE);
+	virtual ~GpioIn();
+
+
+	static void checkPinLevels(const std::vector<int32_t> &pins, std::vector<int32_t> &pin_levels);
+	static void checkPinEvents(const std::vector<int32_t> &pins, std::vector<int32_t> &pin_events);
+	int32_t getValue();
+	int32_t checkEvent();
+	void clearEventReg();
 	int32_t operator[](const int32_t idx);
+	const char *getEventName();
 private:
-
+	GpioInEvent m_event;
+	uint32_t m_word_off;
+	uint32_t m_mask;
 };
 
 void JoyStickDemo();
