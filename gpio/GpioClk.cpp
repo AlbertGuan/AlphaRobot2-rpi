@@ -23,7 +23,7 @@ int32_t GpioClk::num_of_clk_inst = 0;
 
 GpioClk::GpioClk(int32_t pin, float freq)
 	: GpioBase({pin}, FSEL_ALT_0),
-	  m_pin(pin)
+	  m_Pins(pin)
 {
 	Init();
 

@@ -26,61 +26,62 @@ GpioIn::GpioIn(int32_t pin, GpioInEvent event)
 	: GpioBase(std::vector<int32_t>{pin}, FSEL_INPUT),
 	  m_event(event)
 {
-	printf("GpioIn Constructor\n");
+	std::cout << "GpioIn Constructor" << std::endl;
 
 	m_word_off = (pin >= 32) ? 1 : 0;
 	m_mask = 0x1u << (pin % 32);
 
 	//Reset Event Detections
-	gpio_base->async_rising_detect_enable[m_word_off] &= ~m_mask;
+	GPIORegs->GPARENn[m_word_off] &= ~m_mask;
 	usleep(100);
-	gpio_base->async_falling_detect_enable[m_word_off] &= ~m_mask;
+	GPIORegs->GPAFENn[m_word_off] &= ~m_mask;
 	usleep(100);
-	gpio_base->rising_edge_detect_enable[m_word_off] &= ~m_mask;
+	GPIORegs->GPRENn[m_word_off] &= ~m_mask;
 	usleep(100);
-	gpio_base->falling_edge_detect_enable[m_word_off] &= ~m_mask;
+	GPIORegs->GPFENn[m_word_off] &= ~m_mask;
 	usleep(100);
-	gpio_base->high_detect_enable[m_word_off] &= ~m_mask;
+	GPIORegs->GPHENn[m_word_off] &= ~m_mask;
 	usleep(100);
-	gpio_base->low_detect_enable[m_word_off] &= ~m_mask;
+	GPIORegs->GPLENn[m_word_off] &= ~m_mask;
 	usleep(100);
 	//Reset Event Registers
-	gpio_base->event_detect_status[m_word_off] |= m_mask;
+	GPIORegs->GPEDSn[m_word_off] |= m_mask;
 	usleep(100);
 
-	gpio_base->pull_enable = PULL_UP;	//Pull up
+	GPIORegs->GPPUD = PULL_UP;	//Pull up
 	usleep(100);
-	gpio_base->pull_enable_clk[m_word_off] |= m_mask;
+	GPIORegs->GPPUDCLKn[m_word_off] |= m_mask;
 	usleep(100);
-	gpio_base->pull_enable = 0;
-	gpio_base->pull_enable_clk[m_word_off] &= ~m_mask;
+	GPIORegs->GPPUD = 0;
+	GPIORegs->GPPUDCLKn[m_word_off] &= ~m_mask;
 	usleep(100);
 
 	//Set Event Detection
 	switch(event)
 	{
 		case AsyncRising:
-			gpio_base->async_rising_detect_enable[m_word_off] |= m_mask;
+			GPIORegs->GPARENn[m_word_off] |= m_mask;
 			break;
 		case AsyncFalling:
-			gpio_base->async_falling_detect_enable[m_word_off] |= m_mask;
+			GPIORegs->GPAFENn[m_word_off] |= m_mask;
 			break;
 		case Rising:
-			gpio_base->rising_edge_detect_enable[m_word_off] |= m_mask;
+			GPIORegs->GPRENn[m_word_off] |= m_mask;
 			break;
 		case Falling:
-			printf("Setting Falling edge 0x%08x\n", (uint32_t)&gpio_base->falling_edge_detect_enable[m_word_off] - (uint32_t)gpio_base);
-			gpio_base->falling_edge_detect_enable[m_word_off] |= m_mask;
+			printf("Setting Falling edge 0x%08x\n", (uint32_t)&GPIORegs->GPFENn[m_word_off] - (uint32_t)GPIORegs);
+			GPIORegs->GPFENn[m_word_off] |= m_mask;
 			break;
 		case High:
-			gpio_base->high_detect_enable[m_word_off] |= m_mask;
+			GPIORegs->GPHENn[m_word_off] |= m_mask;
 			break;
 		case Low:
-			gpio_base->low_detect_enable[m_word_off] |= m_mask;
+			GPIORegs->GPLENn[m_word_off] |= m_mask;
 			break;
 		default:
 			break;
 	}
+
 	usleep(100);
 
 }
@@ -92,22 +93,22 @@ GpioIn::~GpioIn()
 
 int32_t GpioIn::operator[](const int32_t idx)
 {
-	return this->m_pin[idx];
+	return this->m_Pins[idx];
 }
 
 int32_t GpioIn::getValue()
 {
-	return (gpio_base->pin_level[m_word_off] & m_mask) ? 1 : 0;
+	return (GPIORegs->GPLEVn[m_word_off] & m_mask) ? 1 : 0;
 }
 
 int32_t GpioIn::checkEvent()
 {
-	return (gpio_base->event_detect_status[m_word_off] & m_mask) ? 1 : 0;
+	return (GPIORegs->GPEDSn[m_word_off] & m_mask) ? 1 : 0;
 }
 
 void GpioIn::clearEventReg()
 {
-	gpio_base->event_detect_status[m_word_off] |= m_mask;
+	GPIORegs->GPEDSn[m_word_off] |= m_mask;
 }
 
 const char *GpioIn::getEventName()
@@ -137,8 +138,8 @@ void GpioIn::checkPinLevels(const std::vector<int32_t> &pins, std::vector<int32_
 {
 	uint32_t words_to_check[2];
 
-	words_to_check[0] = gpio_base->pin_level[0];
-	words_to_check[1] = gpio_base->pin_level[1];
+	words_to_check[0] = GPIORegs->GPLEVn[0];
+	words_to_check[1] = GPIORegs->GPLEVn[1];
 
 	for (auto pin : pins)
 	{
@@ -156,8 +157,8 @@ void GpioIn::checkPinEvents(const std::vector<int32_t> &pins, std::vector<int32_
 {
 	uint32_t words_to_check[2];
 
-	words_to_check[0] = gpio_base->event_detect_status[0];
-	words_to_check[1] = gpio_base->event_detect_status[1];
+	words_to_check[0] = GPIORegs->GPEDSn[0];
+	words_to_check[1] = GPIORegs->GPEDSn[1];
 
 	for (auto pin : pins)
 	{

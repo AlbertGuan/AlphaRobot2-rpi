@@ -27,7 +27,11 @@ int32_t GpioPwm::num_of_pwm_inst = 0;
 int32_t GpioPwm::pwm_1_in_use = -1;
 int32_t GpioPwm::pwm_2_in_use = -1;
 
-PinSel_t GpioPwm::getPinSel(uint32_t pin)
+GPIO_FUN_SELECT
+GpioPwm::getPinSel (
+	uint32_t pin
+)
+
 {
 	if (12 == pin)
 		return FSEL_ALT_0;
@@ -46,6 +50,7 @@ PinSel_t GpioPwm::getPinSel(uint32_t pin)
 		std::cout << "Pin " << pin << " doesn't support PWM!" << std::endl;
 		assert(false);
 	}
+
 	return FSEL_INPUT;
 }
 
@@ -53,35 +58,35 @@ void GpioPwm::getChannel()
 {
 	try
 	{
-		if (12 == m_pin[0]
-			|| 18 == m_pin[0]
-			|| 40 == m_pin[0]
-			|| 52 == m_pin[0])
+		if (12 == m_Pins[0]
+			|| 18 == m_Pins[0]
+			|| 40 == m_Pins[0]
+			|| 52 == m_Pins[0])
 		{
 			if (pwm_1_in_use == -1)
 			{
 				m_pwm_channel = 1;
-				pwm_1_in_use = m_pin[0];
+				pwm_1_in_use = m_Pins[0];
 			}
-			else if (pwm_1_in_use != m_pin[0])
-				throw "Failed to init pin " + std::to_string(m_pin[0]) + " occupied by " + std::to_string(pwm_1_in_use);
+			else if (pwm_1_in_use != m_Pins[0])
+				throw "Failed to init pin " + std::to_string(m_Pins[0]) + " occupied by " + std::to_string(pwm_1_in_use);
 		}
-		else if (13 == m_pin[0]
-				|| 19 == m_pin[0]
-				|| 41 == m_pin[0]
-				|| 45 == m_pin[0]
-				|| 53 == m_pin[0])
+		else if (13 == m_Pins[0]
+				|| 19 == m_Pins[0]
+				|| 41 == m_Pins[0]
+				|| 45 == m_Pins[0]
+				|| 53 == m_Pins[0])
 		{
 			if (pwm_2_in_use == -1)
 			{
 				m_pwm_channel = 2;
-				pwm_2_in_use = m_pin[0];
+				pwm_2_in_use = m_Pins[0];
 			}
-			else if (pwm_2_in_use != m_pin[0])
-				throw "Failed to init pin " + std::to_string(m_pin[0]) + " occupied by " + std::to_string(pwm_2_in_use);
+			else if (pwm_2_in_use != m_Pins[0])
+				throw "Failed to init pin " + std::to_string(m_Pins[0]) + " occupied by " + std::to_string(pwm_2_in_use);
 		}
 		else
-			throw "Pin " + std::to_string(m_pin[0]) + " doesn't support PWM";
+			throw "Pin " + std::to_string(m_Pins[0]) + " doesn't support PWM";
 	}
 	catch (const std::string &exp)
 	{
@@ -292,7 +297,7 @@ void GpioPwm::PrintAddress()
 //{
 //	using namespace std;
 //	for (int i = 0; i < 6; ++i)
-//		cout << "gpio_base->select[" << i << "]:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &gpio_base->select[i] << "\t Val: " << setw(8) << hex << gpio_base->select[i] << endl;
+//		cout << "GPIORegs->GPFSELn[" << i << "]:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &GPIORegs->GPFSELn[i] << "\t Val: " << setw(8) << hex << GPIORegs->GPFSELn[i] << endl;
 //	cout << endl;
 //
 //	cout << "pwm_base->CTL:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->CTL << "\t Val: " << setw(8) << hex << pwm_base->CTL.word << endl;

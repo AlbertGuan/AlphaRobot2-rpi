@@ -114,7 +114,7 @@ public:
 	GpioI2C(int32_t pin_sda, int32_t pin_scl);
 	virtual ~GpioI2C();
 
-	static PinSel_t getPinSel(int32_t sda, int32_t scl);
+	static GPIO_FUN_SELECT getPinSel(int32_t sda, int32_t scl);
 	void getChannel();
 
 	int16_t read(const int8_t addr, const int8_t reg, int8_t *vals, int16_t len = 1);

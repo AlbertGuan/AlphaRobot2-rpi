@@ -124,7 +124,7 @@ public:
 	static void Init();
 	static void Uninit();
 //	virtual void DumpRegisters();
-	static PinSel_t getPinSel(uint32_t pin);
+	static GPIO_FUN_SELECT getPinSel(uint32_t pin);
 
 	typedef enum
 	{

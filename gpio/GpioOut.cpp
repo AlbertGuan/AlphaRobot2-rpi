@@ -27,9 +27,9 @@ void GpioOut::Update(const std::vector<uint32_t> &set_pins, const std::vector<ui
 	for (int i = 0; i < 2; ++i)
 	{
 		if (set[i] != 0)
-			gpio_base->out_set[i] = set[i];
+			GPIORegs->GPSETn[i] = set[i];
 		if (clear[i] != 0)
-			gpio_base->out_clear[0] = clear[i];
+			GPIORegs->GPCLRn[0] = clear[i];
 	}
 }
 

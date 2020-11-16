@@ -34,18 +34,17 @@
 #define PCA9685_PIN_SCL				3
 #define PCA9685_I2C_ADDR			0x40
 #define CAMERA_MOTOR_PWM_FREQ		50.0f
-#define LEFT_RIGHT_SERVO		0
-#define LEFT_RIGHT_MIN			60
-#define LEFT_RIGHT_RANGE		150
-#define LEFT_RIGHT_MAX			LEFT_RIGHT_MIN + LEFT_RIGHT_RANGE
+#define LEFT_RIGHT_SERVO			0
+#define LEFT_RIGHT_MIN				60
+#define LEFT_RIGHT_RANGE			150
+#define LEFT_RIGHT_MAX				LEFT_RIGHT_MIN + LEFT_RIGHT_RANGE
 
-#define UP_DOWM_SERVO			1
-#define UP_DOWN_MIN				100
-#define UP_DOWN_RANGE			60
-#define UP_DOWN_MAX				UP_DOWN_MIN + UP_DOWN_RANGE
+#define UP_DOWM_SERVO				1
+#define UP_DOWN_MIN					100
+#define UP_DOWN_RANGE				60
+#define UP_DOWN_MAX					UP_DOWN_MIN + UP_DOWN_RANGE
 
-typedef enum GPIO_FUN_SELECT
-{
+typedef enum _GPIO_FUN_SELECT_ {
 	FSEL_INPUT	= 0b0000,
 	FSEL_OUTPUT	= 0b0001,
 	FSEL_ALT_0	= 0b0100,
@@ -54,18 +53,17 @@ typedef enum GPIO_FUN_SELECT
 	FSEL_ALT_3	= 0b0111,
 	FSEL_ALT_4	= 0b0011,
 	FSEL_ALT_5	= 0b0010,
-}PinSel_t;
+} GPIO_FUN_SELECT, *PGPIO_FUN_SELECT;
 
-typedef enum GPIO_PULL
-{
+typedef enum _GPIO_PULL_ {
 	PULL_DISABLE	= 0b00,
 	PULL_DOWN		= 0b01,
 	PULL_UP			= 0b10,
-}PinPull_t;
+} GPIO_PULL, *PGPIO_PULL;
 
-enum ONOFF
-{
+typedef enum _ONOFF_ {
 	OFF = 0,
 	ON = 1,
-};
+} ONOFF, *PONOFF;
+
 #endif /* RPI3BCONSTANTS_H_ */

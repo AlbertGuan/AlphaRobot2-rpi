@@ -16,3 +16,8 @@
 #define MAP_FAILED		((void *)(-1))
 #endif
 
+#define _In_
+#define _Out_
+#define _In_opt_
+#define _Out_opt_
+

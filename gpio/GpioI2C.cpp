@@ -23,7 +23,12 @@ int32_t GpioI2C::i2c_1_in_use = -1;
 GpioI2C::I2CCtrlReg_t GpioI2C::CTRL = { 0 };
 GpioI2C::I2CStatusReg_t GpioI2C::STATUS = { 0 };
 
-PinSel_t GpioI2C::getPinSel(int32_t sda, int32_t scl)
+GPIO_FUN_SELECT
+GpioI2C::getPinSel (
+	int32_t sda,
+	int32_t scl
+)
+
 {
 	if (0 == sda && 1 == scl)
 		return FSEL_ALT_0;
@@ -46,30 +51,30 @@ void GpioI2C::getChannel()
 {
 	try
 	{
-		if ((0 == m_pin[0] && 1 == m_pin[1])
-			|| (28 == m_pin[0] && 29 == m_pin[1]))
+		if ((0 == m_Pins[0] && 1 == m_Pins[1])
+			|| (28 == m_Pins[0] && 29 == m_Pins[1]))
 		{
 			if (i2c_0_in_use == -1)
 			{
 				m_i2c_channel = 0;
-				i2c_0_in_use = m_pin[0];
+				i2c_0_in_use = m_Pins[0];
 			}
-			else if (i2c_0_in_use != m_pin[0])
-				throw "Failed to init pin " + std::to_string(m_pin[0]) + " occupied by " + std::to_string(i2c_0_in_use);
+			else if (i2c_0_in_use != m_Pins[0])
+				throw "Failed to init pin " + std::to_string(m_Pins[0]) + " occupied by " + std::to_string(i2c_0_in_use);
 		}
-		else if ((2 == m_pin[0] && 3 == m_pin[1])
-				|| (44 == m_pin[0] && 45 == m_pin[1]))
+		else if ((2 == m_Pins[0] && 3 == m_Pins[1])
+				|| (44 == m_Pins[0] && 45 == m_Pins[1]))
 		{
 			if (i2c_1_in_use == -1)
 			{
 				m_i2c_channel = 1;
-				i2c_1_in_use = m_pin[0];
+				i2c_1_in_use = m_Pins[0];
 			}
-			else if (i2c_1_in_use != m_pin[0])
-				throw "Failed to init pin " + std::to_string(m_pin[0]) + " occupied by " + std::to_string(i2c_1_in_use);
+			else if (i2c_1_in_use != m_Pins[0])
+				throw "Failed to init pin " + std::to_string(m_Pins[0]) + " occupied by " + std::to_string(i2c_1_in_use);
 		}
 		else
-			throw "Pin " + std::to_string(m_pin[0]) + " doesn't support I2C";
+			throw "Pin " + std::to_string(m_Pins[0]) + " doesn't support I2C";
 	}
 	catch (const std::string &exp)
 	{

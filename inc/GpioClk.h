@@ -34,7 +34,7 @@ private:
 
 	volatile uint32_t *CM_GP_CTL;
 	volatile uint32_t *CM_GP_DIV;
-	int32_t m_pin;
+	int32_t m_Pins;
 	float m_freq;
 	int32_t m_channel;
 

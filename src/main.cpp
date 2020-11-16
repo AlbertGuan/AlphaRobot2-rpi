@@ -11,8 +11,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include "bcm2835.h"
-
 #include <wiringPi.h>
 
 #include "CameraMotors.h"
@@ -22,9 +20,32 @@
 #include "MotorCtrl.h"
 #include "GpioClk.h"
 #include "GpioIn.h"
+#include "bcm2835.h"
 #include "ProximitySensor.h"
 
-int main(int argc, char *argv[])
+int
+main (
+	_In_ int Argc,
+	_In_ char *Argv[]
+)
+
+/*
+ Routine Description:
+
+	This routine is the entry point of the program.
+
+ Parameters:
+
+ 	Argc - Supplies count of arguments.
+
+ 	Argv - Supplies argument values.
+
+ Return Value:
+
+	int - Not used, always 0
+
+ */
+
 {
 	using namespace std;
 	cout << "Hello Raspberry Pi!" << endl;
