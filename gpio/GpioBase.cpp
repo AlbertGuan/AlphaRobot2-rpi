@@ -28,7 +28,7 @@ GpioBase::GpioBase (
 /*
  Routine Description:
 
-	This routine is the constructor of GpioBase, it mapps the GPIO control
+	This routine is the constructor of GpioBase, it maps the GPIO basic control
 	registers (for the first instance). Then set pin selection registers.
 
  Parameters:

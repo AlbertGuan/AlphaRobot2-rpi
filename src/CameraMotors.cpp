@@ -141,7 +141,7 @@ void rpiI2CInit()
 
 CameraMotor::CameraMotor(int32_t id, float freq, int32_t min, int32_t max, PCA9685Ctrl &controller)
 	: m_id(id),
-	  m_freq(freq),
+	  m_Freq(freq),
 	  m_min(min),
 	  m_max(max),
 	  m_pwm_controller(&controller)

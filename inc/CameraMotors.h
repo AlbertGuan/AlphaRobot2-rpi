@@ -27,7 +27,7 @@ public:
 	void Move(int32_t posn);
 private:
 	int32_t m_id;					//Which channel the motor is connected to on PCA9685
-	float m_freq;
+	float m_Freq;
 	int32_t m_min;
 	int32_t m_max;
 	PCA9685Ctrl *m_pwm_controller;
