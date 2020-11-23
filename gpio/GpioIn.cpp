@@ -2,7 +2,7 @@
  * GpioIn.cpp
  *
  *  Created on: May 11, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 #include <iostream>
 #include <vector>
@@ -59,23 +59,23 @@ GpioIn::GpioIn(int32_t pin, GpioInEvent event)
 	//Set Event Detection
 	switch(event)
 	{
-		case AsyncRising:
+		case InputAsyncRising:
 			GPIORegs->GPARENn[m_word_off] |= m_mask;
 			break;
-		case AsyncFalling:
+		case InputAsyncFalling:
 			GPIORegs->GPAFENn[m_word_off] |= m_mask;
 			break;
-		case Rising:
+		case InputRising:
 			GPIORegs->GPRENn[m_word_off] |= m_mask;
 			break;
-		case Falling:
+		case InputFalling:
 			printf("Setting Falling edge 0x%08x\n", (uint32_t)&GPIORegs->GPFENn[m_word_off] - (uint32_t)GPIORegs);
 			GPIORegs->GPFENn[m_word_off] |= m_mask;
 			break;
-		case High:
+		case InputHigh:
 			GPIORegs->GPHENn[m_word_off] |= m_mask;
 			break;
-		case Low:
+		case InputLow:
 			GPIORegs->GPLENn[m_word_off] |= m_mask;
 			break;
 		default:
@@ -117,17 +117,17 @@ const char *GpioIn::getEventName()
 	{
 		case NONE:
 			return "NONE";
-		case Rising:
+		case InputRising:
 			return "Rising";
-		case Falling:
+		case InputFalling:
 			return "Falling";
-		case High:
+		case InputHigh:
 			return "High";
-		case Low:
+		case InputLow:
 			return "Low";
-		case AsyncRising:
+		case InputAsyncRising:
 			return "AsyncRising";
-		case AsyncFalling:
+		case InputAsyncFalling:
 			return "AsyncFalling";
 		default:
 			return "Unknown";
@@ -174,7 +174,7 @@ void GpioIn::checkPinEvents(const std::vector<int32_t> &pins, std::vector<int32_
 
 void JoyStickDemo()
 {
-	GpioIn::GpioInEvent event = GpioIn::AsyncRising;
+	GpioIn::GpioInEvent event = GpioIn::InputAsyncRising;
 	GpioIn front(8, event);
 	GpioIn right(9, event);
 	GpioIn left(10, event);

@@ -2,7 +2,7 @@
  * ProximitySensor.cpp
  *
  *  Created on: May 29, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #include <iostream>

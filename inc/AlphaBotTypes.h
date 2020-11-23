@@ -2,7 +2,7 @@
  * AlphaBotTypes.h
  *
  *  Created on: Apr 21, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #pragma once
@@ -21,3 +21,5 @@
 #define _In_opt_
 #define _Out_opt_
 
+#define ADDRESS_TO_VOLATILE_POINTER(_addr_) \
+    const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>(_addr_))

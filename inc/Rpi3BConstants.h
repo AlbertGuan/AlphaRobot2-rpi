@@ -2,7 +2,7 @@
  * Rpi3BConstants.h
  *
  *  Created on: Apr 21, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #ifndef RPI3BCONSTANTS_H_
@@ -31,7 +31,7 @@
 #define PWM_CLK_SRC_REQ				RPI_OSCILLATOR_FREQ
 
 #define PCA9685_PIN_SDA				2
-#define PCA9685_PIN_SCL				3
+#define PCA9685_PinScl				3
 #define PCA9685_I2C_ADDR			0x40
 #define CAMERA_MOTOR_PWM_FREQ		50.0f
 #define LEFT_RIGHT_SERVO			0

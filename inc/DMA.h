@@ -2,7 +2,7 @@
  * DMA.h
  *
  *  Created on: Apr 15, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #pragma once

@@ -2,7 +2,7 @@
  * GpioOut.cpp
  *
  *  Created on: May 7, 2019
- *      Author: aguan
+ *      Author: Albert Guan
  */
 #include "GpioOut.h"
 

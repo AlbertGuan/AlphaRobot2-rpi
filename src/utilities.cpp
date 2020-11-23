@@ -2,7 +2,7 @@
  * utilities.cpp
  *
  *  Created on: Apr 23, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 #include <iostream>
 

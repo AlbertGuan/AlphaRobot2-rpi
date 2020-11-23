@@ -2,7 +2,7 @@
  * MotorCtrl.cpp
  *
  *  Created on: May 5, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 #include <iostream>
 #include <iomanip>

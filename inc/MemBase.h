@@ -2,7 +2,7 @@
  * MemBase.h
  *
  *  Created on: May 7, 2019
- *      Author: aguan
+ *      Author: Albert Guan
  */
 #include <stdint.h>
 #include <stddef.h>     /* offsetof */

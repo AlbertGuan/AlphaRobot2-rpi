@@ -2,8 +2,9 @@
  * GpioClk.cpp
  *
  *  Created on: May 11, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
+
 #include <iostream>
 #include <iomanip>
 #include <unistd.h>
@@ -15,11 +16,12 @@
 #include <assert.h>
 #include <exception>
 #include "GpioClk.h"
+#include "AlphaBotTypes.h"
 
 const uint32_t GpioClk::CM_GPxCTL_OFFSET[3] = { 0x70, 0x78, 0x80 };			//CM_GPxCTL
 const uint32_t GpioClk::CM_GPxDIV_OFFSET[3] = { 0x74, 0x7C, 0x84 };			//CM_GPxDIV
-volatile uint32_t *GpioClk::clk_base = NULL;
-int32_t GpioClk::num_of_clk_inst = 0;
+volatile uint32_t *GpioClk::ClkRegisters = NULL;
+int32_t GpioClk::NumOfClkInstances = 0;
 
 GpioClk::GpioClk(
 	int32_t Pin,
@@ -68,8 +70,8 @@ GpioClk::GpioClk(
 	// Init clk control and freq registers
 	//
 
-	CM_GP_CTL = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_GPxCTL_OFFSET[m_channel]));
-	CM_GP_DIV = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_GPxDIV_OFFSET[m_channel]));
+	CM_GP_CTL = ADDRESS_TO_VOLATILE_POINTER((uint32_t)ClkRegisters + CM_GPxCTL_OFFSET[m_channel]);
+	CM_GP_DIV = ADDRESS_TO_VOLATILE_POINTER((uint32_t)ClkRegisters + CM_GPxDIV_OFFSET[m_channel]);
 	SetFreq(Freq);
 	return;
 }
@@ -283,11 +285,18 @@ GpioClk::Init (
 
 {
 
-	if (0 == num_of_clk_inst) {
+	if (0 == NumOfClkInstances) {
 		try {
-			clk_base = const_cast<volatile uint32_t *>(static_cast<uint32_t *>(mmap(NULL, BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, GPIO_CLK_PHY_ADDR)));
-			if (MAP_FAILED == clk_base) {
-				throw "Failed to mmap clk_base";
+			ClkRegisters = const_cast<volatile uint32_t *>(static_cast<uint32_t *>(
+							mmap(NULL,
+								 BLOCK_SIZE,
+								 PROT_READ | PROT_WRITE,
+								 MAP_SHARED,
+								 mem_fd,
+								 GPIO_CLK_PHY_ADDR)));
+
+			if (MAP_FAILED == ClkRegisters) {
+				throw "Failed to mmap ClkRegisters";
 			}
 
 		} catch (const std::string &exp) {
@@ -300,7 +309,7 @@ GpioClk::Init (
 		}
 	}
 
-	num_of_clk_inst += 1;
+	NumOfClkInstances += 1;
 	return 0;
 }
 
@@ -326,10 +335,10 @@ GpioClk::Uninit (
 
 {
 
-	num_of_clk_inst -= 1;
-	if ((0 == num_of_clk_inst) && (NULL != clk_base)) {
-		munmap(static_cast<void *>(const_cast<uint32_t *>(clk_base)), BLOCK_SIZE);
-		clk_base = NULL;
+	NumOfClkInstances -= 1;
+	if ((0 == NumOfClkInstances) && (NULL != ClkRegisters)) {
+		munmap(static_cast<void *>(const_cast<uint32_t *>(ClkRegisters)), BLOCK_SIZE);
+		ClkRegisters = NULL;
 	}
 
 	return;
@@ -362,10 +371,13 @@ BuzzerTest (
 	while (1) {
 		buzzer.SetFreq(freq);
 		freq += incre;
-		if (freq >= 10000)
+		if (freq >= 10000) {
 			incre = -1000;
-		else if (freq < 1000)
+
+		} else if (freq < 1000) {
 			incre = 1000;
+		}
+
 		usleep(100000);
 	}
 

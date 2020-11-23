@@ -2,7 +2,7 @@
  * GpioIn.h
  *
  *  Created on: May 11, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #pragma once
@@ -12,16 +12,15 @@
 class GpioIn : public GpioBase
 {
 public:
-	typedef enum
-	{
+	typedef enum {
 		NONE,
-		Rising,
-		Falling,
-		High,
-		Low,
-		AsyncRising,
-		AsyncFalling,
-	}GpioInEvent;
+		InputRising,
+		InputFalling,
+		InputHigh,
+		InputLow,
+		InputAsyncRising,
+		InputAsyncFalling,
+	} GpioInEvent;
 
 	GpioIn(int32_t pin, GpioInEvent event = NONE);
 	virtual ~GpioIn();

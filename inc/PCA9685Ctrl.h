@@ -2,7 +2,7 @@
  * PCA9685Ctrl.h
  *
  *  Created on: May 9, 2019
- *      Author: aguan
+ *      Author: Albert Guan
  */
 
 #pragma once

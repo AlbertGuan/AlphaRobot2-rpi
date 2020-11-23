@@ -2,7 +2,7 @@
  * PCA9685.cpp
  *
  *  Created on: May 9, 2019
- *      Author: aguan
+ *      Author: Albert Guan
  */
 #include <iostream>
 #include <iomanip>

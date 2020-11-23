@@ -2,7 +2,7 @@
  * WS2812BCtrl.h
  *
  *  Created on: Apr 14, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #pragma once

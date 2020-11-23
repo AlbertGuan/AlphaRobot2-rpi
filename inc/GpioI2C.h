@@ -2,7 +2,7 @@
  * GpioI2C.h
  *
  *  Created on: May 8, 2019
- *      Author: aguan
+ *      Author: Albert Guan
  */
 #pragma once
 
@@ -11,10 +11,18 @@
 class GpioI2C : public GpioBase
 {
 public:
-	typedef union
-	{
-		struct
-		{
+
+	//
+	// This class implements I2C operations. More details on I2C are described in Ch3 BSC
+	// of the BCM2837 ARM-Peripherals.pdf. There are two I2C channels available to the user.
+	//
+
+	//
+	// I2C control register (C register in the datasheet)
+	//
+
+	typedef union _I2CCtrlRegister_{
+		struct {
 			uint32_t READ		: 1;		//0: TX, 1: RX
 			uint32_t res		: 3;
 			uint32_t CLEAR		: 2;		//Clear FIFO
@@ -27,13 +35,16 @@ public:
 			uint32_t I2CEN		: 1;		//I2C Enable
 			uint32_t res3		: 16;
 		};
-		uint32_t word;
-	}I2CCtrlReg_t;
 
-	typedef union
-	{
-		struct
-		{
+		uint32_t word;
+	}I2CCtrlRegister, *PI2CCtrlRegister;
+
+	//
+	// I2C status register
+	//
+
+	typedef union _I2CStatusRegister_ {
+		struct {
 			uint32_t TA			: 1;		//0: TX not active, 1: TX active
 			uint32_t DONE		: 1;		//0: TX not completed, 1: TX completed
 			uint32_t TXW		: 1;		//0: FIFO is full and a write is underway, 1: FIFO is not full and a write is underway
@@ -46,40 +57,54 @@ public:
 			uint32_t CLKT		: 1;		//1: Slave has held the SCL signal low (clock stretching) for longer than I2CCLKT specified
 			uint32_t res		: 22;
 		};
-		uint32_t word;
-	}I2CStatusReg_t;
 
-	typedef union
-	{
-		struct
-		{
-			uint32_t ADDR		: 7;
-			uint32_t res		: 25;
-		};
 		uint32_t word;
-	}I2CAddrReg_t;
+	}I2CStatusRegister, *PI2CStatusRegister;
 
-	typedef union
-	{
-		struct
-		{
+	//
+	// Data length register
+	//
+
+	typedef union _I2CLenRegister_ {
+		struct {
 			uint32_t DLEN		: 16;
 			uint32_t res		: 16;
 		};
-		uint32_t word;
-	}I2CLenReg_t;
 
-	typedef union
-	{
-		struct
-		{
+		uint32_t word;
+	}I2CLenRegister, *PI2CLenRegister;
+
+	//
+	// Slave address register
+	//
+
+	typedef union _I2CSlaveAddrRegister_ {
+		struct {
+			uint32_t ADDR		: 7;
+			uint32_t res		: 25;
+		};
+
+		uint32_t word;
+	}I2CSlaveAddrRegister, *PI2CSlaveAddrRegister;
+
+	//
+	// Clock divider register
+	//
+
+	typedef union _I2CDIVRegister_ {
+		struct {
 			uint32_t CDIV		: 16;
 			uint32_t res		: 16;
 		};
-		uint32_t word;
-	}I2CDIVReg_t;
 
-	typedef union
+		uint32_t word;
+	}I2CDIVRegister, *PI2CDIVRegister;
+
+	//
+	// Delay register
+	//
+
+	typedef union I2CDELRegister
 	{
 		struct
 		{
@@ -87,55 +112,113 @@ public:
 			uint32_t FEDL		: 16;
 		};
 		uint32_t word;
-	}I2CDELReg_t;
+	}I2CDELRegister, *PI2CDELRegister;
 
-	typedef union
-	{
-		struct
-		{
+	//
+	// Clock timeout register
+	//
+
+	typedef union _I2CCLKTRegister_ {
+		struct {
 			uint32_t TOUT		: 16;
 			uint32_t res		: 16;
 		};
+
 		uint32_t word;
-	}I2CCLKTReg_t;
+	}I2CCLKTRegister, *PI2CCLKTRegister;
 
-	typedef struct
-	{
-		I2CCtrlReg_t C;				//Control
-		I2CStatusReg_t S;			//Status
-		I2CLenReg_t DLEN;			//Data Length
-		I2CAddrReg_t A;				//Address
-		uint32_t FIFO;				//FIFO, Do NOT use union, or it fails while writing multiple values
-		I2CDIVReg_t DIV;			//Clock Divider
-		I2CDELReg_t DEL;			//Data Delay
-		I2CCLKTReg_t CLKT;			//Clock Stretch Timeout
-	}I2CReg_t;
+	typedef struct _I2CRegisters_ {
+		I2CCtrlRegister C;				//Control
+		I2CStatusRegister S;			//Status
+		I2CLenRegister DLEN;			//Data Length
+		I2CSlaveAddrRegister A;			//Address
+		uint32_t FIFO;					//FIFO, Do NOT use union, or it fails while writing multiple values
+		I2CDIVRegister DIV;				//Clock Divider
+		I2CDELRegister DEL;				//Data Delay
+		I2CCLKTRegister CLKT;			//Clock Stretch Timeout
+	}I2CRegisters, *PI2CRegisters;
 
-	GpioI2C(int32_t pin_sda, int32_t pin_scl);
-	virtual ~GpioI2C();
+	GpioI2C (
+		int32_t PinSda,
+		int32_t PinScl
+	);
 
-	static GPIO_FUN_SELECT getPinSel(int32_t sda, int32_t scl);
-	void getChannel();
+	virtual
+	~GpioI2C (
+		void
+	);
 
-	int16_t read(const int8_t addr, const int8_t reg, int8_t *vals, int16_t len = 1);
-	int16_t write(const int8_t addr);
-	int16_t write(const int8_t addr, int8_t val);
-	int16_t write(const int8_t addr, const std::vector<int8_t> &vals);
-	void UpdateWriteCtrl();
-	void UpdateReadCtrl();
-	void UpdateStatus();
-	void OnOff(int32_t val);
-	void ClearFIFO();
+	static
+	GPIO_FUN_SELECT
+	GetPinSelection (
+		int32_t sda,
+		int32_t scl
+	);
+
+	void
+	GetChannel (
+		void
+	);
+
+	int16_t
+	read (
+		const int8_t addr,
+		const int8_t reg,
+		int8_t *vals,
+		int16_t len = 1
+	);
+
+	int16_t
+	write (
+		const int8_t addr
+	);
+
+	int16_t
+	write (
+		const int8_t addr,
+		int8_t val
+	);
+
+	int16_t
+	write (
+		const int8_t addr,
+		const std::vector<int8_t> &vals
+	);
+
+	void
+	UpdateWriteCtrl (
+		void
+	);
+
+	void
+	UpdateReadCtrl (
+		void
+	);
+
+	void
+	UpdateStatus (
+		void
+	);
+
+	void
+	OnOff (
+		int32_t val
+	);
+
+	void
+	ClearFIFO (
+		void
+	);
+
 protected:
 	static const uint32_t GPIO_I2C_PHY_ADDR[2];
+	static int32_t NumOfI2CInstances;
+	static int32_t I2C0InUse;
+	static int32_t I2C1InUse;
 
-	static int32_t num_of_i2c_inst;
-	static int32_t i2c_0_in_use;
-	static int32_t i2c_1_in_use;
-
-	static I2CCtrlReg_t CTRL;
-	static I2CStatusReg_t STATUS;
+	static I2CCtrlRegister CTRL;
+	static I2CStatusRegister STATUS;
 private:
-	volatile I2CReg_t *m_i2c_base;
-	int32_t m_i2c_channel;
+	volatile I2CRegisters *m_I2CRegisters;
+	int32_t m_I2CChannelId;
 };

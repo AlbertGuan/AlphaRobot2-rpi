@@ -2,7 +2,7 @@
  * GPIO.h
  *
  *  Created on: May 6, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #pragma once
@@ -10,6 +10,7 @@
 #include <vector>
 #include "Rpi3BConstants.h"
 #include "MemBase.h"
+#include "AlphaBotTypes.h"
 
 class GpioBase : public MemBase
 {

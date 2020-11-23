@@ -2,7 +2,7 @@
  * MotorCtrl.h
  *
  *  Created on: May 5, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 #pragma once
 #include <stdint.h>

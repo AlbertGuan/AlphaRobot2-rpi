@@ -2,7 +2,7 @@
  * WS2812BCtrl.cpp
  *
  *  Created on: Apr 14, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 #include "WS2812BCtrl.h"
 

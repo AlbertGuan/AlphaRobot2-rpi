@@ -2,8 +2,9 @@
  * main.cpp
  *
  *  Created on: Mar 30, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
+ 
 #include <iostream>
 #include <stdio.h>
 #include <stdint.h>
@@ -47,6 +48,7 @@ main (
  */
 
 {
+
 	using namespace std;
 	cout << "Hello Raspberry Pi!" << endl;
 

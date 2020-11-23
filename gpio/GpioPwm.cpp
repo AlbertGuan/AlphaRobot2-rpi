@@ -2,7 +2,7 @@
  * PWM.cpp
  *
  *  Created on: Apr 23, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 #include <iostream>
 #include <iomanip>
@@ -19,7 +19,7 @@
 #include "utilities.h"
 
 volatile GpioPwm::pwm_ctrl_t *GpioPwm::pwm_base = NULL;
-volatile uint32_t *GpioPwm::clk_base = NULL;
+volatile uint32_t *GpioPwm::ClkRegisters = NULL;
 volatile uint32_t *GpioPwm::CM_PWMCTL = NULL;
 volatile uint32_t *GpioPwm::CM_PWMDIV = NULL;
 
@@ -28,7 +28,7 @@ int32_t GpioPwm::pwm_1_in_use = -1;
 int32_t GpioPwm::pwm_2_in_use = -1;
 
 GPIO_FUN_SELECT
-GpioPwm::getPinSel (
+GpioPwm::GetChannelFromPin (
 	uint32_t pin
 )
 
@@ -54,7 +54,7 @@ GpioPwm::getPinSel (
 	return FSEL_INPUT;
 }
 
-void GpioPwm::getChannel()
+void GpioPwm::GetChannel()
 {
 	try
 	{
@@ -90,7 +90,7 @@ void GpioPwm::getChannel()
 	}
 	catch (const std::string &exp)
 	{
-		std::cout << "GpioPwm::getChannel() got exception: " << exp << std::endl;
+		std::cout << "GpioPwm::GetChannel() got exception: " << exp << std::endl;
 	}
 }
 
@@ -106,10 +106,10 @@ void GpioPwm::Init()
 				throw "Failed to mmap pwm_base";
 			}
 
-			clk_base = const_cast<volatile uint32_t *>(static_cast<uint32_t *>(mmap(NULL, BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, GPIO_CLK_PHY_ADDR)));
-			if (MAP_FAILED == clk_base)
+			ClkRegisters = const_cast<volatile uint32_t *>(static_cast<uint32_t *>(mmap(NULL, BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, GPIO_CLK_PHY_ADDR)));
+			if (MAP_FAILED == ClkRegisters)
 			{
-				throw "Failed to mmap clk_base";
+				throw "Failed to mmap ClkRegisters";
 			}
 
 		}
@@ -117,8 +117,8 @@ void GpioPwm::Init()
 		{
 			std::cout << "GpioPwm Constructor got exception: " << exp << std::endl;
 		}
-		CM_PWMCTL = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_PWMCTL_OFFSET));
-		CM_PWMDIV = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) clk_base + CM_PWMDIV_OFFSET));
+		CM_PWMCTL = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) ClkRegisters + CM_PWMCTL_OFFSET));
+		CM_PWMDIV = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) ClkRegisters + CM_PWMDIV_OFFSET));
 	}
 }
 
@@ -132,10 +132,10 @@ void GpioPwm::Uninit()
 			pwm_base = NULL;
 		}
 
-		if (clk_base)
+		if (ClkRegisters)
 		{
-			munmap(static_cast<void *>(const_cast<uint32_t *>(clk_base)), BLOCK_SIZE);
-			clk_base = NULL;
+			munmap(static_cast<void *>(const_cast<uint32_t *>(ClkRegisters)), BLOCK_SIZE);
+			ClkRegisters = NULL;
 			CM_PWMCTL = NULL;
 			CM_PWMDIV = NULL;
 		}
@@ -143,13 +143,13 @@ void GpioPwm::Uninit()
 }
 
 GpioPwm::GpioPwm(int32_t pin, int32_t range, int32_t divisor, int32_t mode, int32_t fifo)
-	: GpioBase({pin}, getPinSel(pin))
+	: GpioBase({pin}, GetChannelFromPin(pin))
 {
 	//Step 0: Init pointers to PWM and CLK registers
 	GpioPwm::Init();
 
 	//Step 1: Figure out which PWM channel to use
-	getChannel();
+	GetChannel();
 
 	//Step 2: Turn off the PWM before making changes
 	PWMOnOff(OFF);

@@ -2,7 +2,7 @@
  * I2C.cpp
  *
  *  Created on: Apr 9, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 #include <iostream>
 #include <iomanip>
@@ -163,7 +163,7 @@ void CameraMotor::Move(int32_t posn)
 
 void TwoMotorCtrl()
 {
-	PCA9685Ctrl camera_motor_ctrl(PCA9685_PIN_SDA, PCA9685_PIN_SCL, PCA9685_I2C_ADDR);
+	PCA9685Ctrl camera_motor_ctrl(PCA9685_PIN_SDA, PCA9685_PinScl, PCA9685_I2C_ADDR);
 	std::cout << "PCA9685 Init" << std::endl;
 	CameraMotor motor_lr(LEFT_RIGHT_SERVO, CAMERA_MOTOR_PWM_FREQ, LEFT_RIGHT_MIN, LEFT_RIGHT_MAX, camera_motor_ctrl);
 	CameraMotor motor_ud(UP_DOWM_SERVO, CAMERA_MOTOR_PWM_FREQ, UP_DOWN_MIN, UP_DOWN_MAX, camera_motor_ctrl);

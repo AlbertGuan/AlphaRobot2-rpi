@@ -2,7 +2,7 @@
  * I2C.h
  *
  *  Created on: Apr 9, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #pragma once

@@ -2,7 +2,7 @@
  * PWM.h
  *
  *  Created on: Apr 23, 2019
- *      Author: aobog
+ *      Author: Albert Guan
  */
 
 #pragma once
@@ -117,14 +117,14 @@ public:
 	void SetClock(int32_t clk_div);
 	void pwmWrite(uint32_t val);
 	void pwmWriteFIFO(uint32_t *vals, uint32_t len);
-	void getChannel();
+	void GetChannel();
 	void ClearFIFO();
 
 	static void PrintAddress();
 	static void Init();
 	static void Uninit();
 //	virtual void DumpRegisters();
-	static GPIO_FUN_SELECT getPinSel(uint32_t pin);
+	static GPIO_FUN_SELECT GetChannelFromPin(uint32_t pin);
 
 	typedef enum
 	{
@@ -142,7 +142,7 @@ private:
 	static const uint32_t CM_PWMDIV_OFFSET 	= 0x000000A4;			//CM_PWMDIV
 
 	static volatile pwm_ctrl_t *pwm_base;
-	static volatile uint32_t *clk_base;
+	static volatile uint32_t *ClkRegisters;
 	static volatile uint32_t *CM_PWMCTL;
 	static volatile uint32_t *CM_PWMDIV;
 
