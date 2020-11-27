@@ -111,9 +111,10 @@ GpioBase::SetPinSelection(
 
 {
 
-	uint32_t bit_off;
-	uint32_t current;
-	uint32_t word_off;
+	uint32_t Before;
+	uint32_t BitOffset;
+	uint32_t Current;
+	uint32_t WordOffset;
 
 	for (auto pin : m_Pins) {
 
@@ -121,39 +122,24 @@ GpioBase::SetPinSelection(
 		//Each GPIO selection word contains 10 pins.
 		//
 
-		word_off = pin / 10;
+		WordOffset = pin / 10;
 
 		//
 		//Each pin takes 3 bits in GPIO selection word.
 		//
 
-		bit_off = pin % 10 * 3;
+		BitOffset = pin % 10 * 3;
 
 		//
 		// Snap the current value.
 		//
 
-		current = GPIORegs->GPFSELn[word_off];
-
-#ifdef DBG
-
-		std::bitset<32> before(current);
-
-#endif
-
-		current &= ~(0x7 << bit_off);
-		current |= m_PinSelection << bit_off;
-		GPIORegs->GPFSELn[word_off] = current;
-
-#ifdef DBG
-
-		std::bitset<32> after(current);
-		std::cout << __func__ << std::endl;
-		std::cout << "Before: " << before << std::endl;
-		std::cout << "After:  " << after << std::endl;
-
-#endif
-
+		Current = GPIORegs->GPFSELn[WordOffset];
+		Before = Current;
+		Current &= ~(0x7 << BitOffset);
+		Current |= m_PinSelection << BitOffset;
+		GPIORegs->GPFSELn[WordOffset] = Current;
+		RPI_PRINT_EX(InfoLevelDebug, "Before: 0x%08x, After: 0x%08x", Before, Current);
 	}
 
 	return;

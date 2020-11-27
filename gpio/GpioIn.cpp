@@ -201,6 +201,7 @@ void JoyStickDemo()
 		pin_levels.clear();
 		usleep(100000);
 	}
+
 //	while (1)
 //	{
 //		printf("Start checking events\n");
@@ -223,5 +224,6 @@ void JoyStickDemo()
 //		}
 //		usleep(100000);
 //	}
+
 }
 

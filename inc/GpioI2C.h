@@ -162,27 +162,27 @@ public:
 
 	int16_t
 	read (
-		const int8_t addr,
-		const int8_t reg,
-		int8_t *vals,
-		int16_t len = 1
+		_In_ int8_t Addr,
+		_In_ int8_t Reg,
+		_Out_ int8_t *Values,
+		_In_ const int16_t Len = 1
 	);
 
 	int16_t
 	write (
-		const int8_t addr
+		_In_ const int8_t Addr
 	);
 
 	int16_t
 	write (
-		const int8_t addr,
-		int8_t val
+		_In_ const int8_t Addr,
+		_In_ int8_t Value
 	);
 
 	int16_t
 	write (
-		const int8_t addr,
-		const std::vector<int8_t> &vals
+		_In_ const int8_t Addr,
+		_In_ const std::vector<int8_t> &Values
 	);
 
 	void
@@ -202,7 +202,7 @@ public:
 
 	void
 	OnOff (
-		int32_t val
+		_In_ int32_t Value
 	);
 
 	void

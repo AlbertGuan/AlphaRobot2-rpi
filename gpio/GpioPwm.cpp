@@ -13,10 +13,10 @@
 #include <fcntl.h>
 #include <bitset>
 #include <assert.h>
+#include <Diag.h>
 #include <exception>
 
 #include "GpioPwm.h"
-#include "utilities.h"
 
 volatile GpioPwm::pwm_ctrl_t *GpioPwm::pwm_base = NULL;
 volatile uint32_t *GpioPwm::ClkRegisters = NULL;

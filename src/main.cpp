@@ -5,6 +5,8 @@
  *      Author: Albert Guan
  */
  
+#include <CameraMotor.h>
+#include <Diag.h>
 #include <iostream>
 #include <stdio.h>
 #include <stdint.h>
@@ -14,7 +16,6 @@
 #include <sys/mman.h>
 #include <wiringPi.h>
 
-#include "CameraMotors.h"
 #include "DMA.h"
 #include "GpioPwm.h"
 #include "WS2812BCtrl.h"
@@ -23,6 +24,7 @@
 #include "GpioIn.h"
 #include "bcm2835.h"
 #include "ProximitySensor.h"
+#include "Diag.h"
 
 int
 main (
@@ -49,8 +51,7 @@ main (
 
 {
 
-	using namespace std;
-	cout << "Hello Raspberry Pi!" << endl;
+	RPI_PRINT(InfoLevelInfo, "Hello Raspberry Pi!");
 
 //	rpiI2CInit();
 

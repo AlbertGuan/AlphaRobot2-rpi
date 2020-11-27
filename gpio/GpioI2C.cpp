@@ -16,7 +16,11 @@
 #include <exception>
 #include "GpioI2C.h"
 
-const uint32_t GpioI2C::GPIO_I2C_PHY_ADDR[2] = { PERIPHERAL_PHY_BASE + GPIO_I2C0_OFFSET, PERIPHERAL_PHY_BASE + GPIO_I2C1_OFFSET};
+const uint32_t GpioI2C::GPIO_I2C_PHY_ADDR[2] = {
+	PERIPHERAL_PHY_BASE + GPIO_I2C0_OFFSET,
+	PERIPHERAL_PHY_BASE + GPIO_I2C1_OFFSET
+};
+
 int32_t GpioI2C::NumOfI2CInstances = 0;
 int32_t GpioI2C::I2C0InUse = -1;
 int32_t GpioI2C::I2C1InUse = -1;
@@ -65,7 +69,8 @@ GpioI2C::GpioI2C (
 	//
 
 	try	{
-		m_I2CRegisters = const_cast<volatile I2CRegisters *>(static_cast<I2CRegisters *>(
+		m_I2CRegisters =
+			const_cast<volatile I2CRegisters *>(static_cast<I2CRegisters *>(
 						mmap(NULL,
 							 sizeof(I2CRegisters),
 							 (PROT_READ | PROT_WRITE),
@@ -77,10 +82,10 @@ GpioI2C::GpioI2C (
 			throw "Failed to map m_I2CRegisters channel " + std::to_string(m_I2CChannelId);
 
 	} catch (const std::string &exp) {
-		std::cout << "GpioI2C Constructor got exception: " << exp << std::endl;
+		RPI_PRINT_EX(InfoLevelError, "exception %s", exp.c_str());
 
 	} catch (...) {
-		std::cout << "GpioI2C Constructor got unknown exception: " << std::endl;
+		RPI_PRINT(InfoLevelError, "unknown exception");
 	}
 
 	//
@@ -95,7 +100,6 @@ GpioI2C::GpioI2C (
 	//
 
 	ClearFIFO();
-
 	return;
 }
 
@@ -142,8 +146,8 @@ GpioI2C::~GpioI2C (
 
 GPIO_FUN_SELECT
 GpioI2C::GetPinSelection (
-	int32_t sda,
-	int32_t scl
+	int32_t PinSda,
+	int32_t PinScl
 )
 
 /*
@@ -156,9 +160,9 @@ GpioI2C::GetPinSelection (
 
  Parameters:
 
- 	sda - Supplies the pin number to sda.
+ 	PinSda - Supplies the pin number to sda.
 
- 	scl - Supplies the pin number to sda.
+ 	PinScl - Supplies the pin number to sda.
 
  Return Value:
 
@@ -168,16 +172,16 @@ GpioI2C::GetPinSelection (
 
 {
 
-	if ((0 == sda) && (1 == scl)) {
+	if ((0 == PinSda) && (1 == PinScl)) {
 		return FSEL_ALT_0;
 
-	} else if ((2 == sda) && (3 == scl)) {
+	} else if ((2 == PinSda) && (3 == PinScl)) {
 		return FSEL_ALT_0;
 
-	} else if ((28 == sda) && (29 == scl)) {
+	} else if ((28 == PinSda) && (29 == PinScl)) {
 		return FSEL_ALT_0;
 
-	} else if ((44 == sda) && (45 == scl)) {
+	} else if ((44 == PinSda) && (45 == PinScl)) {
 
 		//
 		//Note: We don't support using I2C0 on pin 44, 45
@@ -186,7 +190,7 @@ GpioI2C::GetPinSelection (
 		return FSEL_ALT_2;
 
 	} else {
-		std::cout << "SDA " << sda << " SCL " << scl << " doesn't support I2C!" << std::endl;
+		RPI_PRINT_EX(InfoLevelError, "<SDA %d, SCL %d> doesn't support I2C!", PinSda, PinScl);
 		assert(false);
 	}
 
@@ -252,10 +256,10 @@ GpioI2C::GetChannel (
 		}
 
 	} catch (const std::string &exp) {
-		std::cout << "GpioPwm::GetChannel() got exception: " << exp << std::endl;
+		RPI_PRINT_EX(InfoLevelError, "exception %s", exp.c_str());
 
 	} catch (...) {
-		std::cout << __func__ << " got unknown exception" << std::endl;
+		RPI_PRINT(InfoLevelError, "unknown exception");
 	}
 
 	return;
@@ -288,6 +292,7 @@ GpioI2C::UpdateWriteCtrl (
 	CTRL.ST = 1;
 	CTRL.CLEAR = 1;
 	m_I2CRegisters->C.word = CTRL.word;
+	return;
 }
 
 void
@@ -318,6 +323,7 @@ GpioI2C::UpdateReadCtrl (
 	CTRL.CLEAR = 1;
 	CTRL.READ = 1;
 	m_I2CRegisters->C.word = CTRL.word;
+	return;
 }
 
 void
@@ -347,14 +353,15 @@ GpioI2C::UpdateStatus (
 	STATUS.ERR = 1;
 	STATUS.DONE = 1;
 	m_I2CRegisters->S.word = STATUS.word;
+	return;
 }
 
 int16_t
 GpioI2C::read (
-	_In_ int8_t addr,
-	_In_ int8_t reg,
-	_Out_ int8_t *vals,
-	_In_ const int16_t len
+	_In_ int8_t Addr,
+	_In_ int8_t Reg,
+	_Out_ int8_t *Values,
+	_In_ const int16_t Len
 )
 
 /*
@@ -364,13 +371,13 @@ GpioI2C::read (
 
  Parameters:
 
- 	addr - ?
+ 	Addr - Supplies the address of the I2C slave.
 
- 	reg - ?
+ 	Reg - Supplies the register of I2C slave to read.
 
- 	vals - ?
+ 	Values - Supplies the value read from I2C slave.
 
- 	len - ?
+ 	Len - ?
 
  Return Value:
 
@@ -380,49 +387,30 @@ GpioI2C::read (
 
 {
 
-	int16_t received = 0;
+	int16_t BytesReceived = 0;
 
-	assert(vals != NULL);
+	assert(Values != NULL);
 	assert(m_I2CRegisters != NULL);
 
-#if DBG
+	RPI_PRINT_EX(InfoLevelDebug, "0x%p", m_I2CRegisters);
 
-	printf("GpioI2C::read: 0x%p\n", m_I2CRegisters);
+	if (1 == write(Addr, Reg)) {
 
-#endif
-
-	if (1 == write(addr, reg)) {
-
-#if DBG
-
-		printf("Assign Address: %d\n", addr);
-
-#endif
-
-		m_I2CRegisters->A.ADDR = addr;
-
-#if DBG
-
-		printf("Assign Length: %d\n", len);
-
-#endif
-		m_I2CRegisters->DLEN.DLEN = len;
+		RPI_PRINT_EX(InfoLevelDebug, "Assign Address: %d\n", Addr);
+		m_I2CRegisters->A.ADDR = Addr;
+		RPI_PRINT_EX(InfoLevelDebug, "Assign Length: %d\n", Len);
+		m_I2CRegisters->DLEN.DLEN = Len;
 		UpdateReadCtrl();
 		UpdateStatus();
 
-		while (received < len) {
-			while (m_I2CRegisters->S.RXD && received < len) {
-				vals[received] = m_I2CRegisters->FIFO;
-				++received;
+		while (BytesReceived < Len) {
+			while (m_I2CRegisters->S.RXD && BytesReceived < Len) {
+				Values[BytesReceived] = m_I2CRegisters->FIFO;
+				BytesReceived += 1;
 			}
 		}
 
-#if DBG
-
-		printf("Got all\n");
-
-#endif
-
+		RPI_PRINT(InfoLevelDebug, "Got all\n");
 		while (0 == m_I2CRegisters->S.DONE);
 	}
 
@@ -431,7 +419,7 @@ GpioI2C::read (
 
 int16_t
 GpioI2C::write (
-	_In_ int8_t addr
+	_In_ const int8_t Addr
 	)
 
 /*
@@ -441,7 +429,7 @@ GpioI2C::write (
 
  Parameters:
 
- 	addr - ?
+ 	Addr - Supplies the address of the I2C slave.
 
  Return Value:
 
@@ -451,13 +439,13 @@ GpioI2C::write (
 
 {
 
-	return write(addr, {});
+	return write(Addr, {});
 }
 
 int16_t
 GpioI2C::write (
-	_In_ int8_t addr,
-	_In_ int8_t val
+	_In_ const int8_t Addr,
+	_In_ int8_t Value
 	)
 
 /*
@@ -467,9 +455,9 @@ GpioI2C::write (
 
  Parameters:
 
- 	addr - ?
+ 	Addr - Supplies the address of the I2C slave.
 
- 	val - Value to write
+ 	Value - Supplies the value to write
 
  Return Value:
 
@@ -479,13 +467,13 @@ GpioI2C::write (
 
 {
 
-	return write(addr, std::vector<int8_t>{val});
+	return write(Addr, std::vector<int8_t>{Value});
 }
 
 int16_t
 GpioI2C::write (
-	_In_ int8_t addr,
-	_In_ const std::vector<int8_t> &vals
+	_In_ const int8_t Addr,
+	_In_ const std::vector<int8_t> &Values
 	)
 
 /*
@@ -495,9 +483,9 @@ GpioI2C::write (
 
  Parameters:
 
- 	addr - ?
+ 	Addr - Supplies the address of the I2C slave.
 
- 	vals - Supplies a vector of data to write.
+ 	Values - Supplies a vector of data to write.
 
  Return Value:
 
@@ -507,41 +495,33 @@ GpioI2C::write (
 
 {
 
-	int16_t len = vals.size();
+	int16_t Len = Values.size();
 	int16_t sent = 0;
 
-	m_I2CRegisters->A.ADDR = addr;
-	m_I2CRegisters->DLEN.DLEN = len;
-	std::cout << "I2C write to " << static_cast<int32_t>(addr) << " " << len << " bytes of data\n";
+	m_I2CRegisters->A.ADDR = Addr;
+	m_I2CRegisters->DLEN.DLEN = Len;
+	RPI_PRINT_EX(InfoLevelDebug, "I2C write %d bytes to %0x08u", Len, Addr);
 	UpdateStatus();
 	UpdateWriteCtrl();
-	while (sent < len) {
+	while (sent < Len) {
 		if (1 == m_I2CRegisters->S.TXD) {
-			m_I2CRegisters->FIFO = vals[sent];
+			m_I2CRegisters->FIFO = Values[sent];
 			sent += 1;
 		}
 	}
 
-#ifdef DBG
-
-	std::cout << sent << " bytes of data written to  FIFO\n";
-
-#endif
+	RPI_PRINT_EX(InfoLevelDebug, "%d bytes of data written to  FIFO", sent);
 
 	while (0 == m_I2CRegisters->S.DONE);
 
-#ifdef DBG
-
-	std::cout << "I2C write finished " << sent << " bytes of data sent" << std::endl;
-
-#endif
+	RPI_PRINT_EX(InfoLevelDebug, "I2C write finished,  %d bytes of data sent", sent);
 
 	return sent;
 }
 
 void
 GpioI2C::OnOff (
-	_In_ int32_t val
+	_In_ int32_t Value
 	)
 
 /*
@@ -551,7 +531,7 @@ GpioI2C::OnOff (
 
  Parameters:
 
- 	val - Value to write
+ 	Value - Value to write
 
  Return Value:
 
@@ -560,7 +540,9 @@ GpioI2C::OnOff (
 */
 
 {
-	m_I2CRegisters->C.I2CEN = val;
+
+	m_I2CRegisters->C.I2CEN = Value;
+	return;
 }
 
 void
@@ -584,6 +566,8 @@ GpioI2C::ClearFIFO (
 */
 
 {
+
 	m_I2CRegisters->C.CLEAR = 1;
+	return;
 }
 

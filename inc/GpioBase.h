@@ -7,10 +7,12 @@
 
 #pragma once
 
+#include <Diag.h>
 #include <vector>
 #include "Rpi3BConstants.h"
 #include "MemBase.h"
 #include "AlphaBotTypes.h"
+#include "AlphaRobotConstants.h"
 
 class GpioBase : public MemBase
 {

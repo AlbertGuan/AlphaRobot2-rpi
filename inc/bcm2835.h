@@ -22,9 +22,13 @@
 #define BCM2835_HAVE_DMB
 #endif
 
+#ifndef HIGH
 #define HIGH 0x1
+#endif
 
+#ifndef LOW
 #define LOW  0x0
+#endif
 
 #ifndef MIN
 #define MIN(a, b) (a < b ? a : b)
