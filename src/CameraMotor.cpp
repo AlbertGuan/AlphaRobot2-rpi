@@ -75,7 +75,7 @@ CameraMotor::CameraMotor (
 	// TODO: Find a proper way to replace this 4096.
 	//
 
-	m_PCA9685Controller->UpdatePWMOutput(m_PCA9685ChannelId,
+	m_PCA9685Controller->SetPWMDutyCycle(m_PCA9685ChannelId,
 										 (float)MinPosition / 4096);
 
 	return;
@@ -142,7 +142,7 @@ CameraMotor::MoveTo (
 	// Adjust the PWM duty cycle will put the servo motor to corresponding position.
 	//
 
-	m_PCA9685Controller->UpdatePWMOutput(m_PCA9685ChannelId,
+	m_PCA9685Controller->SetPWMDutyCycle(m_PCA9685ChannelId,
 										 (float)Position / 4096);
 
 MoveToEnd:
