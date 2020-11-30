@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "ErrorCode.h"
 
 #ifndef NULL
 #define NULL   ((void *) 0)
@@ -23,3 +24,16 @@
 
 #define ADDRESS_TO_VOLATILE_POINTER(_addr_) \
     const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>(_addr_))
+
+
+#define CHANNEL_NOT_IN_USE		(-1)
+
+//
+// RGB values for one LED pixel
+//
+
+typedef struct _LEDPixel_ {
+	uint32_t R;
+	uint32_t G;
+	uint32_t B;
+} LEDPixel, *PLEDPixel;

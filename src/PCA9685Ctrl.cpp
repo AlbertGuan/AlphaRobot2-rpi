@@ -214,7 +214,7 @@ PCA9685Ctrl::GetMODE1Val (
 
 int32_t
 PCA9685Ctrl::SetMODE1Val (
-	_In_ uint8_t val
+	_In_ uint8_t Val
 	)
 
 /*
@@ -239,7 +239,7 @@ PCA9685Ctrl::SetMODE1Val (
 	assert(m_I2CCtrl != NULL);
 	if (m_I2CCtrl != NULL) {
 		re = m_I2CCtrl->write(m_I2CSlaveAddr,
-							  {REG_MODE1_ADDR, static_cast<int8_t>(val)});
+							  {REG_MODE1_ADDR, static_cast<int8_t>(Val)});
 	}
 
 	return re;
@@ -266,6 +266,7 @@ PCA9685Ctrl::Sleep (
 */
 
 {
+
 	MODE1Reg val;
 	val.word = GetMODE1Val();
 	val.SLEEP = 1;
@@ -316,7 +317,7 @@ PCA9685Ctrl::Restart (
 
  Return Value:
 
-	int8_t - Supplies the number of bytes written to the module.
+	int32_t - Supplies the number of bytes written to the module.
 
 */
 
@@ -344,7 +345,7 @@ PCA9685Ctrl::UpdateFreq (
 
  Return Value:
 
-	int8_t - Supplies the number of bytes written to the module.
+	int32_t - Supplies the number of bytes written to the module.
 
 */
 
@@ -410,7 +411,7 @@ PCA9685Ctrl::SetPWMDutyCycle (
 
  Return Value:
 
-	int8_t - Supplies the number of bytes written to the module.
+	int32_t - Not used.
 
 */
 
@@ -456,7 +457,7 @@ PCA9685Ctrl::SetPWMDutyCycle (
 
  Return Value:
 
-	int8_t - Supplies the number of bytes written to the module.
+	int32_t - Not used.
 
 */
 

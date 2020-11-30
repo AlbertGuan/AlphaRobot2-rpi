@@ -50,4 +50,11 @@
 #define PITCH_MOTOR_RANGE			60
 #define PITCH_MOTOR_MAX				(PITCH_MOTOR_MIN + PITCH_MOTOR_RANGE)
 
+
+//
+// WS2812B pin number
+//
+
+#define WS2812B_PIN					18
+
 #endif /* ALPHAROBOTCONSTANTS_H_ */

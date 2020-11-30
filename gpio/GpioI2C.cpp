@@ -22,8 +22,8 @@ const uint32_t GpioI2C::GPIO_I2C_PHY_ADDR[2] = {
 };
 
 int32_t GpioI2C::NumOfI2CInstances = 0;
-int32_t GpioI2C::I2C0InUse = -1;
-int32_t GpioI2C::I2C1InUse = -1;
+int32_t GpioI2C::I2C0InUse = CHANNEL_NOT_IN_USE;
+int32_t GpioI2C::I2C1InUse = CHANNEL_NOT_IN_USE;
 GpioI2C::I2CCtrlRegister GpioI2C::CTRL = { 0 };
 GpioI2C::I2CStatusRegister GpioI2C::STATUS = { 0 };
 
@@ -112,6 +112,8 @@ GpioI2C::~GpioI2C (
 
 	This routine is the destructor, it stops the channel and unmap registers.
 
+	TODO: Reset I2C0InUse and I2C1InUse.
+
  Parameters:
 
  	None.
@@ -139,6 +141,16 @@ GpioI2C::~GpioI2C (
 	if (m_I2CRegisters) {
 		munmap(static_cast<void *>(const_cast<I2CRegisters *>(m_I2CRegisters)), sizeof(I2CRegisters));
 		m_I2CRegisters = NULL;
+	}
+
+	if (m_I2CChannelId == 0) {
+		I2C0InUse = CHANNEL_NOT_IN_USE;
+
+	} else if (m_I2CChannelId == 1) {
+		I2C1InUse = CHANNEL_NOT_IN_USE;
+
+	} else {
+		assert(false);
 	}
 
 	return;
@@ -232,22 +244,22 @@ GpioI2C::GetChannel (
 		if ((0 == m_Pins[0] && 1 == m_Pins[1]) ||
 			(28 == m_Pins[0] && 29 == m_Pins[1])) {
 
-			if (I2C0InUse == -1) {
+			if (I2C0InUse == CHANNEL_NOT_IN_USE) {
 				m_I2CChannelId = 0;
 				I2C0InUse = m_Pins[0];
 
-			} else if (I2C0InUse != m_Pins[0]) {
+			} else {
 				throw "Failed to init pin " + std::to_string(m_Pins[0]) + " occupied by " + std::to_string(I2C0InUse);
 			}
 
 		} else if ((2 == m_Pins[0] && 3 == m_Pins[1]) ||
 				   (44 == m_Pins[0] && 45 == m_Pins[1])) {
 
-			if (I2C1InUse == -1) {
+			if (I2C1InUse == CHANNEL_NOT_IN_USE) {
 				m_I2CChannelId = 1;
 				I2C1InUse = m_Pins[0];
 
-			} else if (I2C1InUse != m_Pins[0]){
+			} else {
 				throw "Failed to init pin " + std::to_string(m_Pins[0]) + " occupied by " + std::to_string(I2C1InUse);
 			}
 

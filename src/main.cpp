@@ -61,8 +61,7 @@ main (
 
 //	PWMTest();
 
-//	WS2812BCtrl leds(0.3);
-//	leds.WaterLight();
+	WaterLight();
 
 //	MotorDemo();
 
@@ -70,7 +69,7 @@ main (
 
 //	BuzzerTest();
 
-	JoyStickDemo();
+//	JoyStickDemo();
 
 //	ProximitySensorTest();
 	return 0;

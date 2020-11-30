@@ -18,366 +18,768 @@
 
 #include "GpioPwm.h"
 
-volatile GpioPwm::pwm_ctrl_t *GpioPwm::pwm_base = NULL;
+volatile GpioPwm::PWMCtrlRegisters *GpioPwm::PWMCtrlRegs = NULL;
 volatile uint32_t *GpioPwm::ClkRegisters = NULL;
 volatile uint32_t *GpioPwm::CM_PWMCTL = NULL;
 volatile uint32_t *GpioPwm::CM_PWMDIV = NULL;
 
-int32_t GpioPwm::num_of_pwm_inst = 0;
-int32_t GpioPwm::pwm_1_in_use = -1;
-int32_t GpioPwm::pwm_2_in_use = -1;
+int32_t GpioPwm::NumOfPWMInstances = 0;
+int32_t GpioPwm::PWM1InUse = CHANNEL_NOT_IN_USE;
+int32_t GpioPwm::PWM2InUse = CHANNEL_NOT_IN_USE;
 
 GPIO_FUN_SELECT
-GpioPwm::GetChannelFromPin (
-	uint32_t pin
+GpioPwm::GetPinSelection (
+	_In_ uint32_t Pin
 )
 
+/*
+ Routine Description:
+
+	This routine gets pin selections. It is based on
+	CH9.5 of BCM2837 ARM Peripheral.pdf
+
+	TODO: This routine is based on BCM2837 which might not be platform compatible.
+
+ Parameters:
+
+ 	Pin - Supplies the pin number.
+
+ Return Value:
+
+	int32_t - Supplies the pin selection.
+
+*/
+
 {
-	if (12 == pin)
-		return FSEL_ALT_0;
-	else if (13 == pin)
-		return FSEL_ALT_0;
-	else if (18 == pin)
-		return FSEL_ALT_5;
-	else if (19 == pin)
-		return FSEL_ALT_5;
-	else if (40 == pin)
-		return FSEL_ALT_0;
-	else if (41 == pin)
-		return FSEL_ALT_0;
-	else
-	{
-		std::cout << "Pin " << pin << " doesn't support PWM!" << std::endl;
+
+	GPIO_FUN_SELECT re;
+
+	re = FSEL_INPUT;
+	switch(Pin) {
+	case 12:
+	case 13:
+	case 40:
+	case 41:
+	case 45:
+		re = FSEL_ALT_0;
+		break;
+
+	case 52:
+	case 53:
+		re = FSEL_ALT_1;
+		break;
+
+	case 18:
+	case 19:
+		re = FSEL_ALT_5;
+		break;
+
+	default:
+		RPI_PRINT_EX(InfoLevelError,
+					 "Pin %d doesn't support PWM!",
+					 Pin);
+
 		assert(false);
+		break;
 	}
 
-	return FSEL_INPUT;
+	return re;
 }
 
-void GpioPwm::GetChannel()
+int32_t
+GpioPwm::GetChannel (
+	void
+	)
+
+/*
+ Routine Description:
+
+	This routine gets PWM channel ID from pin numbers. It is based on
+	CH9.5 of BCM2837 ARM Peripheral.pdf
+
+	TODO: This routine is based on BCM2837 which might not be platform compatible.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	Error code.
+
+*/
+
 {
-	try
-	{
-		if (12 == m_Pins[0]
-			|| 18 == m_Pins[0]
-			|| 40 == m_Pins[0]
-			|| 52 == m_Pins[0])
-		{
-			if (pwm_1_in_use == -1)
-			{
-				m_pwm_channel = 1;
-				pwm_1_in_use = m_Pins[0];
+
+	int32_t Error;
+
+	Error = ERROR_SUCCESS;
+	try	{
+		switch (m_Pins[0]) {
+		case 12:
+		case 18:
+		case 40:
+		case 52:
+			if (PWM1InUse == CHANNEL_NOT_IN_USE) {
+				m_PWMChannelId = 1;
+				PWM1InUse = m_Pins[0];
+
+			} else {
+				Error = ERROR_CHANNEL_OCCUPIED;
+				throw "Failed to init pin " + std::to_string(m_Pins[0]) +
+					  " occupied by " + std::to_string(PWM1InUse);
 			}
-			else if (pwm_1_in_use != m_Pins[0])
-				throw "Failed to init pin " + std::to_string(m_Pins[0]) + " occupied by " + std::to_string(pwm_1_in_use);
-		}
-		else if (13 == m_Pins[0]
-				|| 19 == m_Pins[0]
-				|| 41 == m_Pins[0]
-				|| 45 == m_Pins[0]
-				|| 53 == m_Pins[0])
-		{
-			if (pwm_2_in_use == -1)
-			{
-				m_pwm_channel = 2;
-				pwm_2_in_use = m_Pins[0];
+
+			break;
+
+		case 13:
+		case 19:
+		case 41:
+		case 45:
+		case 53:
+			if (PWM2InUse == CHANNEL_NOT_IN_USE) {
+				m_PWMChannelId = 2;
+				PWM2InUse = m_Pins[0];
+
+			} else {
+				Error = ERROR_CHANNEL_OCCUPIED;
+				throw "Failed to init pin " + std::to_string(m_Pins[0]) +
+					  " occupied by " + std::to_string(PWM2InUse);
 			}
-			else if (pwm_2_in_use != m_Pins[0])
-				throw "Failed to init pin " + std::to_string(m_Pins[0]) + " occupied by " + std::to_string(pwm_2_in_use);
-		}
-		else
+
+			break;
+
+		default:
+			Error = ERROR_INVALID_PIN;
 			throw "Pin " + std::to_string(m_Pins[0]) + " doesn't support PWM";
+			break;
+		}
+
+	} catch (const std::string &exp) {
+		RPI_PRINT_EX(InfoLevelError, "exception %s", exp.c_str());
+
+	} catch (...) {
+		Error = ERROR_UNKNOWN;
+		RPI_PRINT(InfoLevelError, "unknown exception");
 	}
-	catch (const std::string &exp)
-	{
-		std::cout << "GpioPwm::GetChannel() got exception: " << exp << std::endl;
-	}
+
+	return Error;
 }
 
-void GpioPwm::Init()
+int32_t
+GpioPwm::Init (
+	void
+	)
+
+/*
+ Routine Description:
+
+	This routine maps PWM registers.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	int32_t - TODO: Have an error code map when we have more errors.
+
+*/
+
 {
-	if (0 == num_of_pwm_inst)
-	{
-		try
-		{
-			pwm_base = const_cast<volatile pwm_ctrl_t *>(static_cast<pwm_ctrl_t *>(mmap(NULL, sizeof(pwm_ctrl_t), PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, GPIO_PWM_PHY_ADDR)));
-			if (MAP_FAILED == pwm_base)
-			{
-				throw "Failed to mmap pwm_base";
-			}
+	int32_t Error;
 
-			ClkRegisters = const_cast<volatile uint32_t *>(static_cast<uint32_t *>(mmap(NULL, BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, GPIO_CLK_PHY_ADDR)));
-			if (MAP_FAILED == ClkRegisters)
-			{
-				throw "Failed to mmap ClkRegisters";
-			}
-
-		}
-		catch (const std::string &exp)
-		{
-			std::cout << "GpioPwm Constructor got exception: " << exp << std::endl;
-		}
-		CM_PWMCTL = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) ClkRegisters + CM_PWMCTL_OFFSET));
-		CM_PWMDIV = const_cast<volatile uint32_t *>(reinterpret_cast<uint32_t *>((uint32_t) ClkRegisters + CM_PWMDIV_OFFSET));
+	Error = ERROR_SUCCESS;
+	if (0 != NumOfPWMInstances) {
+		goto InitEnd;
 	}
+
+	try {
+		PWMCtrlRegs = const_cast<volatile PWMCtrlRegisters *>(static_cast<PWMCtrlRegisters *>(
+								mmap(NULL,
+								 	 sizeof(PWMCtrlRegisters),
+									 PROT_READ | PROT_WRITE,
+									 MAP_SHARED,
+									 mem_fd,
+									 GPIO_PWM_PHY_ADDR)));
+
+		if (MAP_FAILED == PWMCtrlRegs) {
+			Error = ERROR_FAILED_MEM_MAP;
+			throw "Failed to mmap PWMCtrlRegs";
+		}
+
+		ClkRegisters = const_cast<volatile uint32_t *>(static_cast<uint32_t *>(
+								mmap(NULL,
+									 BLOCK_SIZE,
+									 PROT_READ | PROT_WRITE,
+									 MAP_SHARED,
+									 mem_fd,
+									 GPIO_CLK_PHY_ADDR)));
+
+		if (MAP_FAILED == ClkRegisters) {
+			Error = ERROR_FAILED_MEM_MAP;
+			throw "Failed to mmap ClkRegisters";
+		}
+
+	} catch (const std::string &exp) {
+		RPI_PRINT_EX(InfoLevelError, "%s", exp.c_str());
+
+	} catch (...) {
+		Error = ERROR_UNKNOWN;
+		RPI_PRINT(InfoLevelError, "got an unknown exception, try to run with root");
+	}
+
+	CM_PWMCTL = ADDRESS_TO_VOLATILE_POINTER((uint32_t) ClkRegisters + CM_PWMCTL_OFFSET);
+	CM_PWMDIV = ADDRESS_TO_VOLATILE_POINTER((uint32_t) ClkRegisters + CM_PWMDIV_OFFSET);
+
+InitEnd:
+	return Error;
 }
 
-void GpioPwm::Uninit()
+int32_t
+GpioPwm::Uninit (
+	void
+	)
+
+/*
+ Routine Description:
+
+	This routine unmaps PWM registers.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	int32_t
+
+*/
+
 {
-	if (0 == num_of_pwm_inst)
-	{
-		if (pwm_base)
-		{
-			munmap(static_cast<void *>(const_cast<pwm_ctrl_t *>(pwm_base)), sizeof(pwm_ctrl_t));
-			pwm_base = NULL;
+	if (0 == NumOfPWMInstances) {
+		if (PWMCtrlRegs != NULL) {
+			munmap(static_cast<void *>(const_cast<PWMCtrlRegisters *>(PWMCtrlRegs)),
+				   sizeof(PWMCtrlRegisters));
+
+			PWMCtrlRegs = NULL;
 		}
 
-		if (ClkRegisters)
-		{
+		if (ClkRegisters != NULL) {
 			munmap(static_cast<void *>(const_cast<uint32_t *>(ClkRegisters)), BLOCK_SIZE);
 			ClkRegisters = NULL;
 			CM_PWMCTL = NULL;
 			CM_PWMDIV = NULL;
 		}
 	}
+
+	return ERROR_SUCCESS;
 }
 
-GpioPwm::GpioPwm(int32_t pin, int32_t range, int32_t divisor, int32_t mode, int32_t fifo)
-	: GpioBase({pin}, GetChannelFromPin(pin))
+GpioPwm::GpioPwm (
+	_In_ int32_t Pin,
+	_In_ int32_t Range,
+	_In_ int32_t Divisor,
+	_In_ int32_t Mode,
+	_In_ int32_t Fifo
+	) : GpioBase({Pin}, GetPinSelection(Pin))
+
+/*
+ Routine Description:
+
+	This routine is the constructor of GpioPwm, it initializes PWM related
+	registers.
+
+ Parameters:
+
+ 	Pin - Supplies the pin number of the PWM output.
+
+ 	Range - Supplies the range of this channel.
+
+ 	Divisor - Supplies the divisor of the clock. PWM Freq = 19.2MHz / Range / Divisor.
+
+ 	Mode - Supplies serial or normal mode.
+
+ 	Fifo - Supplies using FIFO or not.
+
+ Return Value:
+
+	None.
+
+*/
+
 {
-	//Step 0: Init pointers to PWM and CLK registers
+	//
+	//Step 0: Map PWM and CLK registers
+	//
+
 	GpioPwm::Init();
 
+	//
 	//Step 1: Figure out which PWM channel to use
+	//
+
 	GetChannel();
 
+	//
 	//Step 2: Turn off the PWM before making changes
+	//
+
 	PWMOnOff(OFF);
 
+	//
 	//Step 3: Setup CTL register
-	SetPWMCtrl(mode, fifo);
+	//
 
+	SetPWMCtrl(Mode, Fifo);
+
+	//
 	//Step 4: Setup PWM range
-	SetRange(range);
+	//
 
+	SetRange(Range);
+
+	//
 	//Step 5: Setup PWM Clock
-	SetClock(divisor);
-	std::cout << "PWM frequency is: " << PWM_CLK_SRC_REQ / range / divisor << std::endl;
+	//
 
+	SetClock(Divisor);
+	RPI_PRINT_EX(InfoLevelDebug,
+				 "PWM Frequency is set to %f",
+				 (float)PWM_CLK_SRC_REQ / Range / Divisor);
+
+	//
 	//Step 6: Acknowledge the PWM BERR
-	pwm_base->STA.BERR = 1;
-	while (pwm_base->STA.BERR);
+	//
 
-	++num_of_pwm_inst;
+	PWMCtrlRegs->STA.BERR = 1;
+	while (PWMCtrlRegs->STA.BERR);
+	NumOfPWMInstances += 1;
+
+	//
 	//Note: The PWM hasn't been enabled yet!!!
+	//
+
+	return;
 }
 
-GpioPwm::~GpioPwm()
+GpioPwm::~GpioPwm (
+	void
+	)
+
+/*
+ Routine Description:
+
+	This routine is the destructor of GpioPwm.
+	registers.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	None.
+
+*/
+
 {
-	if (1 == m_pwm_channel)
-	{
-		pwm_base->CTL.PWEN1 = 0;
-		pwm_1_in_use = -1;
-	}
-	else if (2 == m_pwm_channel)
-	{
-		pwm_base->CTL.PWEN2 = 0;
-		pwm_2_in_use = -1;
+	if (1 == m_PWMChannelId)	{
+		PWMCtrlRegs->CTL.PWEN1 = 0;
+		PWM1InUse = CHANNEL_NOT_IN_USE;
+
+	} else if (2 == m_PWMChannelId) {
+		PWMCtrlRegs->CTL.PWEN2 = 0;
+		PWM2InUse = CHANNEL_NOT_IN_USE;
 	}
 
-	--num_of_pwm_inst;
+	NumOfPWMInstances -= 1;
 	Uninit();
-
+	return;
 }
 
-/* Unfortunately, the description to clock manager of BCM2835/2827 is missing in the datasheet
- * I'm trying to "reverse-engineering" the wiringPi library along with information I can find
- * through Google.
- */
-void GpioPwm::SetClock(int32_t clk_div)
+void
+GpioPwm::SetPWMCtrl (
+	_In_ const PWMRegCTL& CTL
+	)
+
+/*
+ Routine Description:
+
+	This routine updates the PWM CTL register.
+
+ Parameters:
+
+ 	CTL - Supplies the register value to update.
+
+ Return Value:
+
+	None.
+
+*/
+
 {
-	uint32_t pwm_CTL = pwm_base->CTL.word;
-	clk_div &= 4095;
-	std::cout << "Set clock divisor to " << std::dec << clk_div << std::endl;
+
+	PWMCtrlRegs->CTL.word = CTL.word;
+	if (1 == m_PWMChannelId) {
+		m_UsingFIFO = CTL.USEF1;
+
+	} else if (2 == m_PWMChannelId) {
+		m_UsingFIFO = CTL.USEF2;
+	}
+
+	usleep(100);
+}
+
+void
+GpioPwm::SetPWMCtrl (
+	_In_ int32_t Mode,
+	_In_ int32_t Fifo
+	)
+
+/*
+ Routine Description:
+
+	This routine updates the PWM CTL register.
+
+ Parameters:
+
+ 	Mode - Supplies serial or normal mode.
+
+ 	Fifo - Supplies using FIFO or not.
+
+ Return Value:
+
+	None.
+
+*/
+
+{
+
+	PWMRegCTL PWMCtl;
+	PWMCtl.word = GetPWMCTL().word;
+	if (1 == m_PWMChannelId) {
+		PWMCtl.word &= 0xFFFFFF00;
+		PWMCtl.MODE1 = Mode;
+		PWMCtl.USEF1 = Fifo;
+		m_UsingFIFO = Fifo;
+
+	} else if (2 == m_PWMChannelId) {
+		PWMCtl.word &= 0xFFFFFF00;
+		PWMCtl.MODE2 = Mode;
+		PWMCtl.USEF2 = Fifo;
+		m_UsingFIFO = Fifo;
+
+	} else {
+		RPI_PRINT_EX(InfoLevelError,
+					 "PWM channel %d is not supported",
+					 m_PWMChannelId);
+
+		assert(false);
+	}
+
+	SetPWMCtrl(PWMCtl);
+	return;
+}
+
+const volatile
+GpioPwm::PWMRegCTL&
+GpioPwm::GetPWMCTL (
+	void
+	)
+
+/*
+ Routine Description:
+
+	This routine returns the value of CTL register.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	PWMRegCTL - Value of the CTL register
+
+*/
+
+{
+
+	return PWMCtrlRegs->CTL;
+}
+
+const volatile
+GpioPwm::PWMRegSTA&
+GpioPwm::GetPWMSTA (
+	void
+	)
+
+/*
+ Routine Description:
+
+	This routine returns the value of STA register.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	PWMRegSTA - Value of the STA register
+
+*/
+
+{
+
+	return PWMCtrlRegs->STA;
+}
+
+void
+GpioPwm::SetClock (
+	_In_ int32_t ClkDivisor
+	)
+
+/*
+ Routine Description:
+
+	This routine sets the PWM clock.
+
+	Unfortunately, the description to clock manager of BCM2835/2827 is missing
+	in the datasheet, so I'm trying to "reverse-engineering" the wiringPi library
+	along with information I can find on Google.
+
+ Parameters:
+
+ 	ClkDivisor - Supplies the value of divisor.
+
+ Return Value:
+
+	None.
+
+*/
+
+{
+
+	PWMRegCTL pwm_CTL;
+
+	pwm_CTL.word = GetPWMCTL().word;
+	ClkDivisor &= 4095;
+
+	//
 	//We need to stop the pwm and pwm clock before changing the clock divisor
-	pwm_base->CTL.word = 0;
-	//Some information on the CMPERIICTL: https://elinux.org/BCM2835_registers#CM_PWMCTL
+	//
+
+	PWMCtrlRegs->CTL.word = 0;
+
+	//
+	// Some information on the CMPERIICTL: https://elinux.org/BCM2835_registers#CM_PWMCTL
+	//
+
 	*CM_PWMCTL = BCM_PASSWORD | 0x01;
 	usleep(1000);
 
-	while ((*CM_PWMCTL & 0x80) != 0)	// Wait for clock to be !BUSY
+	//
+	// Wait for clock to be !BUSY
+	//
+
+	while ((*CM_PWMCTL & 0x80) != 0) {
 		usleep(1);
+	}
 
-	*CM_PWMDIV = BCM_PASSWORD | (clk_div << 12);
-
-	*CM_PWMCTL = BCM_PASSWORD | 0x11;	// Start PWM clock
-	pwm_base->CTL.word = pwm_CTL;			// restore PWM_CONTROL
+	*CM_PWMDIV = BCM_PASSWORD | (ClkDivisor << 12);
+	*CM_PWMCTL = BCM_PASSWORD | 0x11;				// Start PWM clock
+	PWMCtrlRegs->CTL.word = pwm_CTL.word;			// restore PWM_CONTROL
 	usleep(1000);
+	return;
 }
 
-void GpioPwm::SetMode(uint32_t mode)
-{
-	pwm_reg_CTL_t temp;
-	if (1 == m_pwm_channel)
-	{
-		temp.word = pwm_base->CTL.word;
-		temp.MSEN1 = mode;
-		pwm_base->CTL.word = temp.word;
-	}
-	else if (2 == m_pwm_channel)
-	{
-		temp.word = pwm_base->CTL.word;
-		temp.MSEN2 = mode;
-		pwm_base->CTL.word = temp.word;
-	}
-	usleep(100);
-}
+void
+GpioPwm::SetRange (
+	_In_ uint32_t Range
+	)
 
-void GpioPwm::SetRange(uint32_t range)
-{
-	if (1 == m_pwm_channel)
-		pwm_base->RNG1 = range;
-	else if (2 == m_pwm_channel)
-		pwm_base->RNG2 = range;
-	usleep(100);
-}
+/*
+ Routine Description:
 
-void GpioPwm::pwmWrite(uint32_t val)
-{
-	if (1 == m_pwm_channel)
-		pwm_base->DAT1 = val;
-	else if (2 == m_pwm_channel)
-		pwm_base->DAT2 = val;
-}
+	This routine sets the range register of PWM.
 
-void GpioPwm::pwmWriteFIFO(uint32_t *vals, uint32_t len)
-{
-	for (uint32_t i = 0; i < len; ++i)
-	{
-		pwm_base->FIF1 = vals[i];
-	}
-}
+ Parameters:
 
-void GpioPwm::SetPWMCtrl(const pwm_reg_CTL_t& ctl)
-{
-	pwm_base->CTL.word = ctl.word;
-	usleep(100);
-}
+ 	Range - Supplies the value to be set.
 
-const volatile GpioPwm::pwm_reg_CTL_t& GpioPwm::GetPWMCTL()
-{
-	return pwm_base->CTL;
-}
+ Return Value:
 
-void GpioPwm::PWMOnOff(int32_t val)
+	None.
+
+*/
+
 {
-	assert(pwm_base != NULL);
-	if (1 == m_pwm_channel)
-		pwm_base->CTL.PWEN1 = val;
-	else if (2 == m_pwm_channel)
-		pwm_base->CTL.PWEN2 = val;
-	else
+
+	if (1 == m_PWMChannelId) {
+		PWMCtrlRegs->RNG1 = Range;
+
+	} else if (2 == m_PWMChannelId) {
+		PWMCtrlRegs->RNG2 = Range;
+
+	} else {
+		RPI_PRINT_EX(InfoLevelError,
+							 "PWM channel %d is not supported",
+							 m_PWMChannelId);
+
 		assert(false);
+	}
+
+	usleep(100);
 }
 
-void GpioPwm::PrintAddress()
+void
+GpioPwm::PWMOnOff (
+	_In_ int32_t Val
+	)
+
+/*
+ Routine Description:
+
+	This routine turns PWM output on/off.
+
+ Parameters:
+
+ 	Val - Supplies turning the output on/off.
+
+ Return Value:
+
+	None.
+
+*/
+
 {
-	using namespace std;
-	cout << "pwm_base->CTL:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->CTL << endl;
-	cout << "pwm_base->STA:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->STA << endl;
-	cout << "pwm_base->DMAC:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->DMAC << endl;
-	cout << "pwm_base->RNG1:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->RNG1 << endl;
-	cout << "pwm_base->DAT1:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->DAT1 << endl;
-	cout << "pwm_base->FIF1:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->FIF1 << endl;
-	cout << "pwm_base->RNG2:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->RNG2 << endl;
-	cout << "pwm_base->DAT2:\t\t0x" << setw(8) << hex << (uint32_t) &pwm_base->DAT2 << endl;
+	assert(PWMCtrlRegs != NULL);
+	if (1 == m_PWMChannelId) {
+		PWMCtrlRegs->CTL.PWEN1 = Val;
+
+	} else if (2 == m_PWMChannelId) {
+		PWMCtrlRegs->CTL.PWEN2 = Val;
+
+	} else {
+		RPI_PRINT_EX(InfoLevelError,
+					 "PWM Channel %d is not supported",
+					 m_PWMChannelId);
+
+		assert(false);
+	}
+
+	return;
 }
 
-//void GpioPwm::DumpRegisters()
-//{
-//	using namespace std;
-//	for (int i = 0; i < 6; ++i)
-//		cout << "GPIORegs->GPFSELn[" << i << "]:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &GPIORegs->GPFSELn[i] << "\t Val: " << setw(8) << hex << GPIORegs->GPFSELn[i] << endl;
-//	cout << endl;
-//
-//	cout << "pwm_base->CTL:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->CTL << "\t Val: " << setw(8) << hex << pwm_base->CTL.word << endl;
-//	cout << "pwm_base->STA:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->STA << "\t Val: " << setw(8) << hex << pwm_base->STA.word << endl;
-//	cout << "pwm_base->DMAC:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->DMAC << "\t Val: " << setw(8) << hex << pwm_base->DMAC.word << endl;
-//	cout << "pwm_base->RNG1:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->RNG1 << "\t Val: " << setw(8) << hex << pwm_base->RNG1 << endl;
-//	cout << "pwm_base->DAT1:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->DAT1 << "\t Val: " << setw(8) << hex << pwm_base->DAT1 << endl;
-//	cout << "pwm_base->FIF1:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->FIF1 << "\t Val: " << setw(8) << hex << pwm_base->FIF1 << endl;
-//	cout << "pwm_base->RNG2:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->RNG2 << "\t Val: " << setw(8) << hex << pwm_base->RNG2 << endl;
-//	cout << "pwm_base->DAT2:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) &pwm_base->DAT2 << "\t Val: " << setw(8) << hex << pwm_base->DAT2 << endl;
-//	cout << endl;
-//
-//	cout << "CM_PWMCTL:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) CM_PWMCTL << "\t Val: " << setw(8) << hex << *CM_PWMCTL << endl;
-//	cout << "CM_PWMDIV:\t\tAddr: 0x" << setw(8) << hex << (uint32_t) CM_PWMDIV << "\t Val: " << setw(8) << hex << *CM_PWMDIV << endl;
-//}
+void
+GpioPwm::ClearFIFO (
+	void
+	)
 
+/*
+ Routine Description:
 
-typedef struct
+	This routine clears the FIFO.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	None.
+
+*/
+
 {
-	uint32_t R;
-	uint32_t G;
-	uint32_t B;
-} LEDPixel_t;
-//Each led requires 24 pixels, each pixel contains 3 bits in "arr"(0b110 for "1" and 0b100 for "0")
-void setSerializedRGB(uint32_t *arr, const int led_idx, const LEDPixel_t &color, const float brightness = 1.0)
+
+	PWMCtrlRegs->CTL.CLRF1 = 1;
+}
+
+void
+GpioPwm::UpdatePWMOutput (
+	_In_ uint32_t Val
+	)
+
+/*
+ Routine Description:
+
+	This routine udpates the PWM output.
+
+	Note: If this channel is using the FIFO, there's no effect.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	None.
+
+*/
+
 {
-	uint32_t R = color.R * brightness;
-	uint32_t G = color.G * brightness;
-	uint32_t B = color.B * brightness;
-	uint32_t color_comp = (G << 16) | (R << 8) | B;
-//	printf("led[%d]: color_comp: 0x%08x\n", led_idx, color_comp);
-	uint32_t mask = 0x1;
-	for (int pixel = 0; pixel < 24; ++pixel, mask <<= 1)
-	{
-		int32_t word_off = (led_idx * 72 + pixel * 3) / 32;
-		int32_t bit_off = 29 - (led_idx * 72 + pixel * 3) % 32;
-		if (bit_off >= 0)
-		{
-			arr[word_off] &= ~(0x7 << bit_off);
-			if (color_comp & mask)
-				arr[word_off] |= 0x6 << bit_off;
-			else
-				arr[word_off] |= 0x4 << bit_off;
-		}
-		else if (bit_off == -1)
-		{
-			arr[word_off] &= ~(0x3);
-			arr[word_off + 1] &= ~(0x1 << (32 + bit_off));
-			if (color_comp & mask)
-				arr[word_off] |= 0x3;
-			else
-				arr[word_off] |= 0x2;
-		}
-		else if (bit_off == -2)
-		{
-			arr[word_off] |= 0x1;
-			arr[word_off + 1] &= ~(0x3 << (32 + bit_off));
-			if (color_comp & mask)
-				arr[word_off + 1] |= 0x2 << (32 + bit_off);
+
+	if (m_UsingFIFO != 0) {
+		RPI_PRINT_EX(InfoLevelWarning,
+					 "Channle %d is in FIFO mode!",
+					 m_PWMChannelId);
+	}
+
+	if (1 == m_PWMChannelId) {
+		PWMCtrlRegs->DAT1 = Val;
+
+	} else if (2 == m_PWMChannelId) {
+		PWMCtrlRegs->DAT2 = Val;
+
+	} else {
+		RPI_PRINT_EX(InfoLevelError,
+							 "PWM Channel %d is not supported",
+							 m_PWMChannelId);
+
+		assert(false);
+	}
+
+	return;
+}
+
+void
+GpioPwm::UpdatePWMFIFO (
+	_In_ uint32_t *vals,
+	_In_ uint32_t len
+	)
+
+/*
+ Routine Description:
+
+	This routine fills the PWM FIFO.
+
+	Note: If this channel is not using the FIFO, there's no effect.
+
+ Parameters:
+
+ 	None.
+
+ Return Value:
+
+	None.
+
+*/
+
+{
+
+	if (m_UsingFIFO != 0) {
+		RPI_PRINT_EX(InfoLevelWarning,
+					 "Channle %d is NOT in FIFO mode!",
+					 m_PWMChannelId);
+	}
+
+	for (uint32_t i = 0; i < len; ++i) {
+		PWMCtrlRegs->FIF1 = vals[i];
+
+		while(GetPWMSTA().FULL1 != 0) {
+			usleep(10);
 		}
 	}
-}
-
-void GpioPwm::SetPWMCtrl(int32_t mode, int32_t fifo)
-{
-	pwm_reg_CTL_t pwm_ctl;
-	pwm_ctl.word = GetPWMCTL().word;
-	if (1 == m_pwm_channel)
-	{
-		pwm_ctl.word &= 0xFFFFFF00;
-		//Set to serialiser mode
-		pwm_ctl.MODE1 = mode;
-		//Use the FIFO
-		pwm_ctl.USEF1 = fifo;
-	}
-	SetPWMCtrl(pwm_ctl);
-}
-
-void GpioPwm::ClearFIFO()
-{
-	pwm_base->CTL.CLRF1 = 1;
 }
 

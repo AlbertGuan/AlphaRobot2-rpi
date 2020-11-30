@@ -67,8 +67,8 @@ public:
 	static int8_t GetLEDxOffHighAddr(_In_ int32_t LEDIdx);
 
 	int8_t GetMODE1Val();
-	int32_t SetMODE1Val(_In_ uint8_t val);
-	int32_t UpdateFreq(_In_ float freq);
+	int32_t SetMODE1Val(_In_ uint8_t Val);
+	int32_t UpdateFreq(_In_ float Freq);
 	int32_t Sleep();
 	int32_t Wakeup();
 	int32_t Restart();

@@ -30,19 +30,32 @@
 class WS2812BCtrl
 {
 public:
-	typedef struct
-	{
-		uint32_t R;
-		uint32_t G;
-		uint32_t B;
-	} LEDPixel_t;
 
-	WS2812BCtrl(float brightness = 0.3);
-	~WS2812BCtrl();
+	WS2812BCtrl (
+		_In_ float brightness = 0.3
+		);
 
-	void SetBrightness(float brightness);
-	void WaterLight();
-	void setSerializedRGB(uint32_t *arr, const int led_idx, const LEDPixel_t &color);
+	~WS2812BCtrl (
+		void
+		);
+
+	void
+	SetBrightness (
+		_In_ float Brightness
+		);
+
+	void
+	setSerializedRGB (
+		_Out_ uint32_t *arr,
+		_In_ const int led_idx,
+		_In_ const LEDPixel &color
+		);
+
+	void
+	OneShot (
+		_In_ uint32_t *vals,
+		_In_ uint32_t len
+		);
 
 private:
 	static const uint32_t BITS_PER_COLOR = 8;
@@ -50,8 +63,13 @@ private:
 	static const uint32_t WS2812B_PWM_DIVIDOR = 8;		//19.2MHz / 8 = 2.4MHz
 	static const uint32_t WS2812B_PWM_MODE = 1;			//Seriliser mode
 	static const uint32_t WS2812B_PWM_FIFO = 1;			//Using FIFO
-	float m_brightness;
 
-	GpioPwm *m_pwm;
+	GpioPwm *m_PWM;
+	float m_Brightness;
 };
 
+//
+// Sample code
+//
+
+void WaterLight();
